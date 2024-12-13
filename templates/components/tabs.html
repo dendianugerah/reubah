@@ -1,38 +1,38 @@
 {{ define "tabs" }}
-<div class="border-b border-gray-200 bg-gray-50/50">
-    <nav class="flex -mb-px mx-auto" aria-label="Tabs">
+ <div class="border-b transition-colors duration-200" :class="{ 'border-gray-700 bg-darkSurface': darkMode, 'border-gray-200 bg-gray-50/50': !darkMode }">
+      <nav class="flex -mb-px mx-auto" aria-label="Tabs">
         <!-- Image Processing -->
         <button @click="activeTab = 'image'" 
-                :class="{'border-indigo-500 text-indigo-600 bg-white': activeTab === 'image',
-                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'image'}"
+                :class="{'border-indigo-500 text-indigo-600': activeTab === 'image',
+                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500': activeTab !== 'image'}"
                 class="w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm transition-colors duration-200 flex flex-col items-center space-y-1">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span>Image Processing</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span>Image Processing</span>
         </button>
 
         <!-- Document Processing -->
         <button @click="activeTab = 'document'"
-                :class="{'border-indigo-500 text-indigo-600 bg-white': activeTab === 'document',
-                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'document'}"
+                :class="{'border-indigo-500 text-indigo-600': activeTab === 'document',
+                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500': activeTab !== 'document'}"
                 class="w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm transition-colors duration-200 flex flex-col items-center space-y-1">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>Document Processing</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>Document Processing</span>
         </button>
 
         <!-- Batch Processing -->
         <button @click="activeTab = 'batch'"
-                :class="{'border-indigo-500 text-indigo-600 bg-white': activeTab === 'batch',
-                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'batch'}"
+                :class="{'border-indigo-500 text-indigo-600': activeTab === 'batch',
+                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500': activeTab !== 'batch'}"
                 class="w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm transition-colors duration-200 flex flex-col items-center space-y-1">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-            <span>Batch Processing</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <span>Batch Processing</span>
         </button>
-    </nav>
-</div>
+      </nav>
+    </div>
 {{ end }} 

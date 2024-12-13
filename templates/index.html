@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reubahhh</title>
+    <title>Reubah</title>
     <link href="/static/css/styles.css" rel="stylesheet">
     <script src="/static/js/main.js" defer></script>
 </head>
-<body class="bg-gray-50" x-data="{ activeTab: 'image', processingMode: 'individual' }">
+<body class="transition-colors duration-200" x-data="{ activeTab: 'image', processingMode: 'individual', darkMode: localStorage.getItem('darkMode') === 'true' }" 
+    :class="{ 'dark bg-darkBg text-gray-100': darkMode, 'bg-[#FFFFFF] text-gray-900': !darkMode }">
     {{ template "nav" . }}
 
-    <div class="min-h-screen py-6">
+    <main class="min-h-screen py-6">
         <div class="max-w-6xl mx-auto px-4">
-            <div class="mb-6 bg-white rounded-lg shadow">
+            <div class="mb-6 rounded-lg shadow" :class="{ 'bg-darkSurface text-darkTextPrimary': darkMode, 'bg-white': !darkMode }">
                 {{ template "tabs" . }}
 
                 <div class="p-6">
@@ -44,7 +45,7 @@
 
             {{ template "progress-result" . }}
         </div>
-    </div>
+    </main>
 
     <script src="/static/js/imagePreview.js"></script>
     <script src="/static/js/formHandler.js"></script>
