@@ -49,14 +49,23 @@ func ConvertDocument(input io.Reader, inputFormat, outputFormat string) ([]byte,
 	}
 	f.Close()
 
-	// Prepare LibreOffice command
-	cmd := exec.Command(
-		"soffice",
-		"--headless",
-		"--convert-to", outputFormat,
-		"--outdir", tempDir,
-		inputFile,
-	)
+	var cmd *exec.Cmd
+	if inputFormat == "pdf" {
+		cmdStr := "libreoffice --headless --infilter='writer_pdf_import' --convert-to %s --outdir %s %q"
+		cmd = exec.Command(
+			"bash",
+			"-c",
+			fmt.Sprintf(cmdStr, outputFormat, tempDir, inputFile),
+		)
+	} else {
+		cmd = exec.Command(
+			"soffice",
+			"--headless",
+			"--convert-to", outputFormat,
+			"--outdir", tempDir,
+			inputFile,
+		)
+	}
 
 	// Execute conversion
 	if output, err := cmd.CombinedOutput(); err != nil {

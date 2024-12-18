@@ -57,7 +57,7 @@ Here are some images related to the project:
 
 | From ➡️ To ⬇️ | PDF | DOCX | DOC | ODT | RTF | TXT |
 |--------------|:---:|:----:|:---:|:---:|:---:|:---:|
-| **PDF** (Soon)     | -   | ❌   | ❌  | ❌  | ❌  | ❌  |
+| **PDF** (from PDF currently still bad)     | -   | ✅   | ✅  | ❌  | ❌  | ❌  |
 | **DOCX**     | ✅  | -    | ✅  | ✅  | ✅  | ✅  |
 | **DOC**      | ✅  | ✅   | -   | ✅  | ✅  | ✅  |
 | **ODT**      | ✅  | ✅   | ✅  | -   | ✅  | ✅  |
