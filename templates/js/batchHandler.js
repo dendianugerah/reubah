@@ -52,13 +52,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function handleFileSelect(e) {
-        const files = Array.from(e.target.files).filter(file => file.type.startsWith("image/"));
+        const files = Array.from(e.target.files).filter(file => {
+            const isImage = file.type.startsWith("image/");
+            const isHeic = file.name.toLowerCase().endsWith('.heic') || 
+                          file.name.toLowerCase().endsWith('.heif');
+            return isImage || isHeic;
+        });
         
         if (files.length === 0) {
             alert("Please select valid image files");
             return;
         }
-
+    
         state.files = files;
         updateFileList();
         elements.batchProcessBtn.disabled = false;
@@ -239,6 +244,8 @@ document.addEventListener("DOMContentLoaded", function () {
             'webp': 'image/webp',
             'gif': 'image/gif',
             'bmp': 'image/bmp',
+            'heic': 'image/heic',
+            'heif': 'image/heif',
             'pdf': 'application/pdf'
         };
         return contentTypes[format] || 'application/octet-stream';

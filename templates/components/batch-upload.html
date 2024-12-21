@@ -17,8 +17,7 @@
                         </span>
                     </label>
                     <p class="text-gray-500 mt-2">or drag and drop your images here</p>
-                    <input id="batchImageInput" type="file" multiple accept="image/*" class="sr-only">
-                </div>
+                    <input id="batchImageInput" type="file" multiple accept="image/*,.heic,.heif" class="sr-only">                </div>
             </div>
             <div id="batchFileList" class="hidden">
                 <div class="max-h-60 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-4">
@@ -105,6 +104,7 @@
                             <option value="webp">WebP - Modern web format</option>
                             <option value="gif">GIF - Simple animations</option>
                             <option value="bmp">BMP - Basic format</option>
+                            <option value="heic">HEIC - High efficiency</option>
                         </optgroup>
                         <optgroup label="Document Formats">
                             <option value="pdf">PDF - Portable Document Format</option>

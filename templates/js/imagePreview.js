@@ -9,8 +9,15 @@ document.addEventListener("DOMContentLoaded", function () {
     uploadText: document.getElementById("uploadText"),
     widthInput: document.getElementById("widthInput"),
     heightInput: document.getElementById("heightInput"),
-    removePreviewBtn: document.getElementById("removePreview")
+    removePreviewBtn: document.getElementById("removePreview"),
+    formatSelect: document.getElementById("formatSelect")  
   };
+
+  function isHeicFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    return ext === 'heic' || ext === 'heif' || 
+           file.type === 'image/heic' || file.type === 'image/heif';
+  }
 
   function initializeImagePreview() {
     if (!elements.imageInput || !elements.uploadArea) {
@@ -60,14 +67,18 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function handleFileSelect(file) {
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
-      return;
+    const isImage = file.type.startsWith("image/");
+    const isHeic = file.name.toLowerCase().endsWith('.heic') || 
+                  file.name.toLowerCase().endsWith('.heif');
+    
+    if (!isImage && !isHeic) {
+        alert("Please select an image file");
+        return;
     }
 
     updateFileStatus(file);
     previewImage(file);
-  }
+}
 
   function updateFileStatus(file) {
     if (!elements.fileStatus) return;
@@ -81,17 +92,38 @@ document.addEventListener("DOMContentLoaded", function () {
   function previewImage(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      if (!elements.previewDiv) return;
+        if (!elements.previewDiv) return;
 
-      elements.previewDiv.classList.remove("hidden");
-      const img = elements.previewDiv.querySelector("img");
-      if (!img) return;
+        elements.previewDiv.classList.remove("hidden");
+        const img = elements.previewDiv.querySelector("img") || document.createElement("img");
+        img.className = "max-w-full rounded-lg";
+        
+        if (isHeicFile(file)) {
+            img.src = '/static/images/heic-placeholder.svg';
+            img.alt = 'HEIC image placeholder';
+            elements.uploadArea.classList.add("border-green-500");
+            if (elements.uploadText) {
+                elements.uploadText.innerHTML = '<span class="text-green-500">HEIC file ready for processing</span>';
+            }
+            
+            // Force output format to something other than HEIC
+            if (elements.formatSelect) {
+                if (elements.formatSelect.value === "heic") {
+                    elements.formatSelect.value = "jpeg";
+                }
+            }
+        } else {
+            img.src = e.target.result;
+            img.alt = 'Image preview';
+            img.onload = () => updateImageInfo(img);
+        }
 
-      img.src = e.target.result;
-      img.onload = () => updateImageInfo(img);
+        if (!elements.previewDiv.querySelector("img")) {
+            elements.previewDiv.appendChild(img);
+        }
     };
     reader.readAsDataURL(file);
-  }
+}
 
   function updateImageInfo(img) {
     const dimensions = `${img.naturalWidth} × ${img.naturalHeight}px`;

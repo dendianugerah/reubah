@@ -11,7 +11,10 @@ RUN apk add --no-cache \
     libwebp-dev \
     musl-dev \
     nodejs \
-    npm
+    npm \
+    libheif-dev \
+    x265-dev \
+    libde265-dev
 
 # Copy go.mod and go.sum first to leverage Docker cache
 COPY go.mod go.sum ./
@@ -40,7 +43,10 @@ RUN apk add --no-cache \
     ttf-liberation \
     libwebp \
     openjdk11-jre \
-    curl
+    curl \
+    libheif-dev \
+    x265-dev \
+    libde265-dev
 
 # Create directories for LibreOffice
 RUN mkdir -p /tmp/.cache /tmp/.config /tmp/.local

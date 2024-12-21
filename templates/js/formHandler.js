@@ -84,48 +84,81 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function validateFile() {
     if (!fileInput.files || !fileInput.files.length) {
-      showError("Please select an image file first");
-      return false;
+        showError("Please select an image file first");
+        return false;
     }
 
     const file = fileInput.files[0];
     if (file.size > MAX_FILE_SIZE) {
-      showError("File size exceeds 32MB limit");
-      return false;
+        showError("File size exceeds 32MB limit");
+        return false;
+    }
+
+    const isImage = file.type.startsWith('image/');
+    const isHeic = isHeicFile(file);
+    
+    if (!isImage && !isHeic) {
+        showError("Please select a valid image file");
+        return false;
     }
 
     return true;
-  }
+}
 
-  function createFormData() {
-    const formData = new FormData();
-    formData.append("image", fileInput.files[0]);
+function isHeicFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  return ext === 'heic' || ext === 'heif' || file.type === 'image/heic' || file.type === 'image/heif';
+}
+
+function createFormData() {
+  const formData = new FormData();
+  const file = fileInput.files[0];
+  
+  // Create a new Blob with the correct MIME type for HEIC files
+  if (isHeicFile(file)) {
+    const heicBlob = new Blob([file], { type: 'image/heic' });
+    formData.append("image", heicBlob, file.name);
+    formData.append("sourceFormat", "heic");
     
-    // Add processing options
-    if (elements.formatSelect) {
-      formData.append("format", elements.formatSelect.value || "jpeg");
+    // Always convert HEIC to a different format
+    const outputFormat = elements.formatSelect?.value;
+    if (!outputFormat || outputFormat === "heic") {
+      formData.append("format", "jpeg"); // Default to JPEG
+    } else {
+      formData.append("format", outputFormat);
     }
-    if (elements.qualitySelect) {
-      formData.append("quality", elements.qualitySelect.value);
-    }
-    if (elements.widthInput?.value) {
-      formData.append("width", elements.widthInput.value);
-    }
-    if (elements.heightInput?.value) {
-      formData.append("height", elements.heightInput.value);
-    }
-    if (elements.resizeModeSelect) {
-      formData.append("resizeMode", elements.resizeModeSelect.value || "fit");
-    }
-    if (elements.removeBackground?.checked) {
-      formData.append("removeBackground", "true");
-    }
-    if (elements.optimize?.checked) {
-      formData.append("optimize", "true");
-    }
-
-    return formData;
+  } else {
+    formData.append("image", file);
+    formData.append("format", elements.formatSelect?.value || "jpeg");
   }
+  
+  // Add other options
+  if (elements.qualitySelect?.value) {
+    formData.append("quality", elements.qualitySelect.value);
+  }
+  if (elements.widthInput?.value) {
+    formData.append("width", elements.widthInput.value);
+  }
+  if (elements.heightInput?.value) {
+    formData.append("height", elements.heightInput.value);
+  }
+  if (elements.resizeModeSelect) {
+    formData.append("resizeMode", elements.resizeModeSelect.value || "fit");
+  }
+  if (elements.removeBackground?.checked) {
+    formData.append("removeBackground", "true");
+  }
+  if (elements.optimize?.checked) {
+    formData.append("optimize", "true");
+  }
+
+  // Log form data for debugging
+  for (let pair of formData.entries()) {
+    console.log(pair[0] + ': ' + pair[1]);
+  }
+
+  return formData;
+}
 
   async function processImage(formData) {
     showProgress();
@@ -133,24 +166,31 @@ document.addEventListener("DOMContentLoaded", function () {
     if (submitButton) submitButton.disabled = true;
 
     try {
-      const response = await fetch("/process", {
-        method: "POST",
-        body: formData
-      });
+        // Log the FormData contents for debugging
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+        }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || "Processing failed");
-      }
+        const response = await fetch("/process", {
+            method: "POST",
+            body: formData
+        });
 
-      await handleSuccess(response, elements.formatSelect?.value || "jpeg");
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: "Unknown error occurred" }));
+            console.error("Server response:", errorData);
+            throw new Error(errorData.error?.message || errorData.message || "Processing failed");
+        }
+
+        await handleSuccess(response, elements.formatSelect?.value || "jpeg");
     } catch (error) {
-      showError(error.message || "Failed to process image");
+        console.error("Processing error:", error);
+        showError(error.message || "Failed to process image");
     } finally {
-      hideProgress();
-      if (submitButton) submitButton.disabled = false;
+        hideProgress();
+        if (submitButton) submitButton.disabled = false;
     }
-  }
+}
 
   function showProgress() {
     if (elements.progress) {

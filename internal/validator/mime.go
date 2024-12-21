@@ -9,11 +9,13 @@ import (
 )
 
 var allowedMIMETypes = map[string]bool{
-	"image/jpeg": true,
-	"image/png":  true,
-	"image/webp": true,
-	"image/gif":  true,
-	"image/bmp":  true,
+	"image/jpeg":     true,
+	"image/png":      true,
+	"image/webp":     true,
+	"image/gif":      true,
+	"image/bmp":      true,
+	"image/heic":     true,
+	"image/heif":     true,
 	"application/pdf": true,
 }
 
@@ -31,9 +33,44 @@ func ValidateMIMEType(file multipart.File) error {
 	}
 
 	mimeType := http.DetectContentType(buffer)
+	
+	// Special handling for HEIC/HEIF files since they might not be correctly detected
 	if !allowedMIMETypes[strings.ToLower(mimeType)] {
+		// Check file signature for HEIC/HEIF
+		if isHeicSignature(buffer) {
+			return nil
+		}
 		return errors.New(errors.ErrInvalidMIME, "Unsupported file type: "+mimeType, nil)
 	}
 
 	return nil
-} 
+}
+
+// isHeicSignature checks for HEIC/HEIF file signatures
+func isHeicSignature(buffer []byte) bool {
+	// HEIC files typically start with these signatures after the MIME box
+	heicSignatures := []string{
+		"ftypheic",
+		"ftypheix",
+		"ftyphevc",
+		"ftypheim",
+		"ftypheis",
+		"ftyphevm",
+		"ftyphevs",
+		"ftypmif1",
+		"ftypmsf1",
+		"ftypheic",
+		"ftypheif",
+	}
+
+	// Convert buffer to string for easier searching
+	bufferStr := string(buffer)
+	
+	for _, sig := range heicSignatures {
+		if strings.Contains(bufferStr, sig) {
+			return true
+		}
+	}
+	
+	return false
+}
