@@ -42,6 +42,28 @@ module.exports = {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          light: '#6366F1',
+          lighter: '#818CF8',
+          darker: '#4F46E5',
+        },
+        
+        success: {
+          light: '#10B981',
+          dark: '#059669',
+        },
+        warning: {
+          light: '#F59E0B',
+          dark: '#B45309',
+        },
+        error: {
+            light: '#EF4444',
+            dark: '#DC2626',
+        },
+        backgroundColor: {
+          'darkSurface/90': 'rgb(24 24 27 / 0.9)',
+          'darkSurface/50': 'rgb(24 24 27 / 0.5)',
+          'darkAccent/10': 'rgb(0 112 243 / 0.1)',
+          'accent-light/10': 'rgb(99 102 241 / 0.1)',
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -51,11 +73,23 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        darkBg: '#09090B',
-        darkSurface: '#1E1E2C',
-        darkTextPrimary: '#E5E7EB',
-        darkTextSecondary: '#A3A3A3',
-        darkAccent: '#14B8A6',
+        darkBg: '#0A0A0A',
+        darkSurface: '#1A1A1A',
+        darkSurfaceHover: '#242424',
+        darkBorder: '#2E2E2E',
+        darkTextPrimary: '#FFFFFF',
+        darkTextSecondary: '#A0A0A0',
+        darkAccent: '#3B82F6',
+        darkAccentHover: '#2563EB',
+        darkInput: '#2A2A2A',
+        darkInputHover: '#333333',
+        darkInputFocus: '#404040',
+        
+        darkDisabled: {
+          bg: '#1C1C1C',
+          text: '#666666',
+          border: '#333333'
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

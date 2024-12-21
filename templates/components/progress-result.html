@@ -4,39 +4,74 @@
         <div class="relative pt-1">
             <div class="flex items-center justify-between mb-2">
                 <div>
-                    <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-600 bg-indigo-200">
+                    <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full transition-colors"
+                          :class="{ 
+                              'text-darkAccent bg-darkAccent/10': darkMode,
+                              'text-indigo-600 bg-indigo-200': !darkMode 
+                          }">
                         Processing
                     </span>
                 </div>
             </div>
-            <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-indigo-100">
-                <div class="animate-pulse w-full h-full bg-indigo-500 transition-all duration-300"></div>
+            <div class="overflow-hidden h-2 mb-4 text-xs flex rounded transition-colors"
+                 :class="{ 'bg-darkInput': darkMode, 'bg-indigo-100': !darkMode }">
+                <div class="animate-pulse w-full h-full transition-colors"
+                     :class="{ 'bg-darkAccent': darkMode, 'bg-indigo-500': !darkMode }">
+                </div>
             </div>
-            <p class="text-sm text-gray-600 text-center">Processing your image...</p>
+            <p class="text-sm text-center transition-colors"
+               :class="{ 'text-darkTextSecondary': darkMode, 'text-gray-600': !darkMode }">
+                Processing your image...
+            </p>
         </div>
     </div>
 
-    <div id="result" class="hidden mt-6 bg-white rounded-lg shadow-lg overflow-hidden">
-        <div class="border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Processed Image</h3>
+    <div id="result" class="hidden mt-6 rounded-lg shadow-lg overflow-hidden transition-colors"
+         :class="{ 'bg-darkSurface border border-darkBorder': darkMode, 'bg-white': !darkMode }">
+        <div class="px-4 py-3 sm:px-6 transition-colors"
+             :class="{ 
+                 'border-b border-darkBorder bg-darkInput': darkMode,
+                 'border-b border-gray-200 bg-gray-50': !darkMode 
+             }">
+            <h3 class="text-lg leading-6 font-medium transition-colors"
+                :class="{ 'text-darkTextPrimary': darkMode, 'text-gray-900': !darkMode }">
+                Processed Image
+            </h3>
         </div>
         <div class="p-6 space-y-6">
-            <div class="result-preview rounded-lg overflow-hidden shadow-md border border-gray-200"></div>
+            <div class="result-preview rounded-lg overflow-hidden shadow-md transition-colors"
+                 :class="{ 'border border-darkBorder': darkMode, 'border border-gray-200': !darkMode }">
+            </div>
             
-            <div class="result-info bg-gray-50 rounded-lg p-4 space-y-4">
+            <div class="result-info rounded-lg p-4 space-y-4 transition-colors"
+                 :class="{ 'bg-darkInput': darkMode, 'bg-gray-50': !darkMode }">
                 <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                        <p class="text-gray-500">Original Size</p>
-                        <p class="font-medium text-gray-900 original-size"></p>
+                        <p class="transition-colors" 
+                           :class="{ 'text-darkTextSecondary': darkMode, 'text-gray-500': !darkMode }">
+                            Original Size
+                        </p>
+                        <p class="font-medium transition-colors original-size"
+                           :class="{ 'text-darkTextPrimary': darkMode, 'text-gray-900': !darkMode }">
+                        </p>
                     </div>
                     <div>
-                        <p class="text-gray-500">Processed Size</p>
-                        <p class="font-medium text-gray-900 new-size"></p>
+                        <p class="transition-colors"
+                           :class="{ 'text-darkTextSecondary': darkMode, 'text-gray-500': !darkMode }">
+                            Processed Size
+                        </p>
+                        <p class="font-medium transition-colors new-size"
+                           :class="{ 'text-darkTextPrimary': darkMode, 'text-gray-900': !darkMode }">
+                        </p>
                     </div>
                 </div>
 
                 <div class="flex justify-end">
-                    <a href="#" class="download-btn inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                    <a href="#" class="download-btn inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
+                       :class="{ 
+                           'text-darkTextPrimary bg-darkAccent hover:bg-darkAccentHover focus:ring-darkAccent': darkMode,
+                           'text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500': !darkMode 
+                       }">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                         </svg>
@@ -47,4 +82,4 @@
         </div>
     </div>
 </div>
-{{ end }} 
+{{ end }}

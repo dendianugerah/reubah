@@ -69,7 +69,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function updateDocumentInfo() {
         const info = elements.documentInfo.querySelector('p');
-        info.textContent = `${state.file.name} (${(state.file.size / (1024 * 1024)).toFixed(2)} MB)`;
+        info.innerHTML = `
+            <span class="transition-colors" :class="{ 'text-darkTextPrimary': darkMode, 'text-gray-900': !darkMode }">
+                ${state.file.name}
+            </span>
+            <span class="ml-2 transition-colors" :class="{ 'text-darkTextSecondary': darkMode, 'text-gray-500': !darkMode }">
+                (${(state.file.size / (1024 * 1024)).toFixed(2)} MB)
+            </span>`;
         elements.documentInfo.classList.remove("hidden");
     }
 
@@ -135,4 +141,4 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     initializeDocumentConversion();
-}); 
+});

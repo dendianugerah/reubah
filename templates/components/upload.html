@@ -4,30 +4,32 @@
         <input id="imageInput" name="image" type="file" accept="image/*,.heic,.heif" required class="sr-only">        
         <label class="block">
             <div id="uploadArea" 
-                 class="mt-1 flex justify-center px-6 pt-8 pb-8 border-2 border-dashed rounded-lg hover:border-indigo-500 transition-all duration-200 group"
+                 class="mt-1 flex justify-center px-6 pt-8 pb-8 border-2 border-dashed rounded-lg transition-all duration-200 group"
                  :class="{ 
-                     'border-gray-700 bg-darkSurface text-darkTextPrimary hover:bg-darkSurface/90': darkMode,
+                     'border-darkBorder bg-darkSurface text-darkTextPrimary hover:bg-darkSurface/90': darkMode,
                      'border-gray-300 bg-gray-50 hover:bg-gray-50/50 text-gray-600': !darkMode 
                  }">
                 <div class="space-y-2 text-center">
                     <svg class="mx-auto h-14 w-14 transition-colors"
-                         :class="{ 'text-gray-400 group-hover:text-darkAccent': darkMode, 'text-gray-400 group-hover:text-indigo-500': !darkMode }"
+                         :class="{ 'text-gray-400 group-hover:text-darkAccent': darkMode, 'text-gray-400 group-hover:text-accent-light': !darkMode }"
                          stroke="currentColor" fill="none" viewBox="0 0 48 48">
                         <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                     <div id="uploadText" class="flex flex-col space-y-2 text-sm"
                          :class="{ 'text-darkTextSecondary': darkMode, 'text-gray-600': !darkMode }">
                         <label for="imageInput" class="relative cursor-pointer rounded-md font-medium"
-                               :class="{ 'text-darkAccent hover:text-darkAccent/80': darkMode, 'text-indigo-600 hover:text-indigo-500': !darkMode }">
+                               :class="{ 'text-darkAccent hover:text-darkAccentHover': darkMode, 'text-accent-light hover:text-accent-darker': !darkMode }">
                             <span class="inline-flex items-center px-4 py-2 border text-sm rounded-full transition-colors"
-                                  :class="{ 'border-darkAccent hover:bg-darkAccent/10': darkMode, 'border-indigo-500 hover:bg-indigo-50': !darkMode }">
+                                  :class="{ 'border-darkAccent hover:bg-darkAccent/10': darkMode, 'border-accent-light hover:bg-accent-light/10': !darkMode }">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                 </svg>
                                 Choose a file
                             </span>
                         </label>
-                        <p :class="{ 'text-darkTextSecondary': darkMode, 'text-gray-500': !darkMode }">or drag and drop your image here</p>
+                        <p :class="{ 'text-darkTextSecondary': darkMode, 'text-gray-500': !darkMode }">
+                            or drag and drop your image here
+                        </p>
                     </div>
                     <div class="text-xs mt-2"
                          :class="{ 'text-darkTextSecondary': darkMode, 'text-gray-500': !darkMode }">
@@ -40,22 +42,23 @@
 
     <div id="fileStatus" 
          class="hidden text-center py-3 px-4 rounded-md transition-all duration-300"
-         :class="{ 'bg-darkSurface text-darkAccent': darkMode, 'bg-indigo-50 text-indigo-700': !darkMode }">
+         :class="{ 'bg-darkSurface text-darkAccent': darkMode, 'bg-accent-light/10 text-accent-darker': !darkMode }">
         <p class="text-sm">
             <span id="fileName" class="font-medium"></span>
-            <span id="fileSize" :class="{ 'text-darkTextSecondary': darkMode, 'text-indigo-600/75': !darkMode }"></span>
+            <span id="fileSize" :class="{ 'text-darkTextSecondary': darkMode, 'text-accent-light/75': !darkMode }"></span>
         </p>
     </div>
 
     <div id="preview" class="hidden">
         <div class="relative p-4 rounded-lg border"
-             :class="{ 'bg-darkSurface border-gray-700': darkMode, 'bg-gray-50 border-gray-200': !darkMode }">
+             :class="{ 'bg-darkSurface border-darkBorder': darkMode, 'bg-gray-50 border-gray-200': !darkMode }">
             <img class="max-h-64 mx-auto rounded-lg shadow-md" alt="Preview">
             <div class="absolute top-2 right-2 px-3 py-1 rounded-full text-sm font-medium"
-                 :class="{ 'bg-black/50 text-white': darkMode, 'bg-gray-900/50 text-gray-100': !darkMode }"></div>
+                 :class="{ 'bg-black/50 text-darkTextPrimary': darkMode, 'bg-gray-900/50 text-gray-100': !darkMode }">
+            </div>
             <button type="button" 
-                    class="absolute top-2 left-2 p-2 rounded-full text-sm transition-colors cursor-pointer"
-                    :class="{ 'bg-red-500/80 hover:bg-red-500': darkMode, 'bg-red-500/80 hover:bg-red-500': !darkMode }"
+                    class="absolute top-2 left-2 p-2 rounded-full text-sm transition-colors cursor-pointer text-white"
+                    :class="{ 'bg-error-dark/80 hover:bg-error-dark': darkMode, 'bg-error-light/80 hover:bg-error-light': !darkMode }"
                     id="removePreview" 
                     aria-label="Remove image">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

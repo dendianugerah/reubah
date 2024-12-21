@@ -73,10 +73,18 @@ document.addEventListener("DOMContentLoaded", function () {
         elements.batchFileList.innerHTML = state.files.map((file, index) => `
             <div class="flex items-center justify-between py-2">
                 <div class="flex items-center">
-                    <span class="text-sm font-medium text-gray-900">${file.name}</span>
-                    <span class="ml-2 text-sm text-gray-500">(${(file.size / (1024 * 1024)).toFixed(2)} MB)</span>
+                    <span class="text-sm font-medium transition-colors" 
+                          :class="{ 'text-darkTextPrimary': darkMode, 'text-gray-900': !darkMode }">
+                        ${file.name}
+                    </span>
+                    <span class="ml-2 text-sm transition-colors" 
+                          :class="{ 'text-darkTextSecondary': darkMode, 'text-gray-500': !darkMode }">
+                        (${(file.size / (1024 * 1024)).toFixed(2)} MB)
+                    </span>
                 </div>
-                <button onclick="removeFile(${index})" class="text-red-500 hover:text-red-700">
+                <button onclick="removeFile(${index})" 
+                        class="transition-colors hover:text-red-700"
+                        :class="{ 'text-red-400': darkMode, 'text-red-500': !darkMode }">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -279,4 +287,4 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     initializeBatchUpload();
-}); 
+});
