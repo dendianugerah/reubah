@@ -254,6 +254,7 @@ document.addEventListener("DOMContentLoaded", function () {
             'bmp': 'image/bmp',
             'heic': 'image/heic',
             'heif': 'image/heif',
+            'ico': 'image/x-icon',
             'pdf': 'application/pdf'
         };
         return contentTypes[format] || 'application/octet-stream';

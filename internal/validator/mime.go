@@ -9,14 +9,16 @@ import (
 )
 
 var allowedMIMETypes = map[string]bool{
-	"image/jpeg":     true,
-	"image/png":      true,
-	"image/webp":     true,
-	"image/gif":      true,
-	"image/bmp":      true,
-	"image/heic":     true,
-	"image/heif":     true,
-	"application/pdf": true,
+	"image/jpeg":               true,
+	"image/png":                true,
+	"image/webp":               true,
+	"image/gif":                true,
+	"image/bmp":                true,
+	"image/heic":               true,
+	"image/heif":               true,
+	"image/x-icon":             true,
+	"image/vnd.microsoft.icon": true,
+	"application/pdf":          true,
 }
 
 func ValidateMIMEType(file multipart.File) error {
@@ -33,11 +35,11 @@ func ValidateMIMEType(file multipart.File) error {
 	}
 
 	mimeType := http.DetectContentType(buffer)
-	
-	// Special handling for HEIC/HEIF files since they might not be correctly detected
+
+	// Special handling for HEIC/HEIF and ICO files since they might not be correctly detected
 	if !allowedMIMETypes[strings.ToLower(mimeType)] {
 		// Check file signature for HEIC/HEIF
-		if isHeicSignature(buffer) {
+		if isHeicSignature(buffer) || isIcoSignature(buffer) {
 			return nil
 		}
 		return errors.New(errors.ErrInvalidMIME, "Unsupported file type: "+mimeType, nil)
@@ -65,12 +67,21 @@ func isHeicSignature(buffer []byte) bool {
 
 	// Convert buffer to string for easier searching
 	bufferStr := string(buffer)
-	
+
 	for _, sig := range heicSignatures {
 		if strings.Contains(bufferStr, sig) {
 			return true
 		}
 	}
-	
+
 	return false
+}
+
+// isIcoSignature checks for ICO file signature
+func isIcoSignature(buffer []byte) bool {
+	// ICO files start with 00 00 01 00
+	if len(buffer) < 4 {
+		return false
+	}
+	return buffer[0] == 0 && buffer[1] == 0 && buffer[2] == 1 && buffer[3] == 0
 }

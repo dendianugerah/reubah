@@ -96,69 +96,87 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const isImage = file.type.startsWith('image/');
     const isHeic = isHeicFile(file);
+    const isIco = isIcoFile(file);
     
-    if (!isImage && !isHeic) {
+    if (!isImage && !isHeic && !isIco) {
         showError("Please select a valid image file");
         return false;
     }
 
     return true;
-}
+  }
 
-function isHeicFile(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  return ext === 'heic' || ext === 'heif' || file.type === 'image/heic' || file.type === 'image/heif';
-}
+  function isHeicFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    return ext === 'heic' || ext === 'heif' || file.type === 'image/heic' || file.type === 'image/heif';
+  }
 
-function createFormData() {
-  const formData = new FormData();
-  const file = fileInput.files[0];
-  
-  // Create a new Blob with the correct MIME type for HEIC files
-  if (isHeicFile(file)) {
-    const heicBlob = new Blob([file], { type: 'image/heic' });
-    formData.append("image", heicBlob, file.name);
-    formData.append("sourceFormat", "heic");
+  function isIcoFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    return ext === 'ico' || file.type === 'image/x-icon' || file.type === 'image/vnd.microsoft.icon';
+  }
+
+  function createFormData() {
+    const formData = new FormData();
+    const file = fileInput.files[0];
     
-    // Always convert HEIC to a different format
-    const outputFormat = elements.formatSelect?.value;
-    if (!outputFormat || outputFormat === "heic") {
-      formData.append("format", "jpeg"); // Default to JPEG
+    // Handle special file types
+    if (isHeicFile(file)) {
+      const heicBlob = new Blob([file], { type: 'image/heic' });
+      formData.append("image", heicBlob, file.name);
+      formData.append("sourceFormat", "heic");
+      
+      // Always convert HEIC to a different format
+      const outputFormat = elements.formatSelect?.value;
+      if (!outputFormat || outputFormat === "heic") {
+        formData.append("format", "jpeg"); // Default to JPEG
+      } else {
+        formData.append("format", outputFormat);
+      }
+    } else if (isIcoFile(file)) {
+      const icoBlob = new Blob([file], { type: 'image/x-icon' });
+      formData.append("image", icoBlob, file.name);
+      formData.append("sourceFormat", "ico");
+      
+      // Default to PNG for ICO files if not specified
+      const outputFormat = elements.formatSelect?.value;
+      if (!outputFormat || outputFormat === "ico") {
+        formData.append("format", "png"); // Default to PNG
+      } else {
+        formData.append("format", outputFormat);
+      }
     } else {
-      formData.append("format", outputFormat);
+      formData.append("image", file);
+      formData.append("format", elements.formatSelect?.value || "jpeg");
     }
-  } else {
-    formData.append("image", file);
-    formData.append("format", elements.formatSelect?.value || "jpeg");
-  }
-  
-  // Add other options
-  if (elements.qualitySelect?.value) {
-    formData.append("quality", elements.qualitySelect.value);
-  }
-  if (elements.widthInput?.value) {
-    formData.append("width", elements.widthInput.value);
-  }
-  if (elements.heightInput?.value) {
-    formData.append("height", elements.heightInput.value);
-  }
-  if (elements.resizeModeSelect) {
-    formData.append("resizeMode", elements.resizeModeSelect.value || "fit");
-  }
-  if (elements.removeBackground?.checked) {
-    formData.append("removeBackground", "true");
-  }
-  if (elements.optimize?.checked) {
-    formData.append("optimize", "true");
-  }
+    
+    // Add other options
+    if (elements.qualitySelect?.value) {
+      formData.append("quality", elements.qualitySelect.value);
+    }
+    if (elements.widthInput?.value) {
+      formData.append("width", elements.widthInput.value);
+    }
+    if (elements.heightInput?.value) {
+      formData.append("height", elements.heightInput.value);
+    }
+    if (elements.resizeModeSelect) {
+      formData.append("resizeMode", elements.resizeModeSelect.value || "fit");
+    }
+    if (elements.removeBackground?.checked) {
+      formData.append("removeBackground", "true");
+    }
+    if (elements.optimize?.checked) {
+      formData.append("optimize", "true");
+    }
 
-  // Log form data for debugging
-  for (let pair of formData.entries()) {
-    console.log(pair[0] + ': ' + pair[1]);
-  }
+    // Log form data for debugging
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + pair[1]);
+    }
 
-  return formData;
-}
+    return formData;
+  }
 
   async function processImage(formData) {
     showProgress();

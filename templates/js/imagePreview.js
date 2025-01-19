@@ -13,10 +13,20 @@ document.addEventListener("DOMContentLoaded", function () {
     formatSelect: document.getElementById("formatSelect")  
   };
 
+  // Add HEIC decoder script to head
+  const heicScript = document.createElement('script');
+  heicScript.src = 'https://unpkg.com/heic2any';
+  document.head.appendChild(heicScript);
+
   function isHeicFile(file) {
     const ext = file.name.split('.').pop().toLowerCase();
     return ext === 'heic' || ext === 'heif' || 
            file.type === 'image/heic' || file.type === 'image/heif';
+  }
+
+  function isIcoFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    return ext === 'ico' || file.type === 'image/x-icon';
   }
 
   function initializeImagePreview() {
@@ -68,17 +78,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function handleFileSelect(file) {
     const isImage = file.type.startsWith("image/");
-    const isHeic = file.name.toLowerCase().endsWith('.heic') || 
-                  file.name.toLowerCase().endsWith('.heif');
+    const isHeic = isHeicFile(file);
+    const isIco = isIcoFile(file);
     
-    if (!isImage && !isHeic) {
+    if (!isImage && !isHeic && !isIco) {
         alert("Please select an image file");
         return;
     }
 
     updateFileStatus(file);
     previewImage(file);
-}
+  }
 
   function updateFileStatus(file) {
     if (!elements.fileStatus) return;
@@ -90,6 +100,47 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function previewImage(file) {
+    if (isHeicFile(file)) {
+        // Use heic2any to convert HEIC to blob
+        heic2any({
+            blob: file,
+            toType: "image/jpeg",
+            quality: 0.9
+        }).then(conversionResult => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (!elements.previewDiv) return;
+
+                elements.previewDiv.classList.remove("hidden");
+                const img = elements.previewDiv.querySelector("img") || document.createElement("img");
+                img.className = "max-w-full rounded-lg";
+                img.src = e.target.result;
+                img.alt = 'HEIC preview';
+                img.onload = () => updateImageInfo(img);
+
+                if (!elements.previewDiv.querySelector("img")) {
+                    elements.previewDiv.appendChild(img);
+                }
+
+                elements.uploadArea.classList.add("border-green-500");
+                if (elements.uploadText) {
+                    elements.uploadText.innerHTML = '<span class="text-green-500">HEIC file ready for processing</span>';
+                }
+                
+                // Force output format to something other than HEIC
+                if (elements.formatSelect && elements.formatSelect.value === "heic") {
+                    elements.formatSelect.value = "jpeg";
+                }
+            };
+            reader.readAsDataURL(conversionResult);
+        }).catch(error => {
+            console.error('Error decoding HEIC:', error);
+            // Fall back to server-side conversion if client-side fails
+            serverSideHeicPreview(file);
+        });
+        return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
         if (!elements.previewDiv) return;
@@ -98,32 +149,83 @@ document.addEventListener("DOMContentLoaded", function () {
         const img = elements.previewDiv.querySelector("img") || document.createElement("img");
         img.className = "max-w-full rounded-lg";
         
-        if (isHeicFile(file)) {
-            img.src = '/static/images/heic-placeholder.svg';
-            img.alt = 'HEIC image placeholder';
+        if (isIcoFile(file)) {
+            img.src = e.target.result;
+            img.alt = 'ICO preview';
+            img.style.backgroundColor = '#ffffff'; // Add white background for transparency
             elements.uploadArea.classList.add("border-green-500");
             if (elements.uploadText) {
-                elements.uploadText.innerHTML = '<span class="text-green-500">HEIC file ready for processing</span>';
+                elements.uploadText.innerHTML = '<span class="text-green-500">ICO file ready for processing</span>';
             }
             
-            // Force output format to something other than HEIC
-            if (elements.formatSelect) {
-                if (elements.formatSelect.value === "heic") {
-                    elements.formatSelect.value = "jpeg";
-                }
+            // Set PNG as default output for ICO
+            if (elements.formatSelect && elements.formatSelect.value === "ico") {
+                elements.formatSelect.value = "png";
             }
         } else {
             img.src = e.target.result;
             img.alt = 'Image preview';
-            img.onload = () => updateImageInfo(img);
         }
+        
+        img.onload = () => updateImageInfo(img);
 
         if (!elements.previewDiv.querySelector("img")) {
             elements.previewDiv.appendChild(img);
         }
     };
     reader.readAsDataURL(file);
-}
+  }
+
+  async function serverSideHeicPreview(file) {
+    if (!elements.previewDiv) return;
+
+    const img = elements.previewDiv.querySelector("img") || document.createElement("img");
+    img.className = "max-w-full rounded-lg";
+    
+    try {
+        // Create a temporary form data
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('sourceFormat', 'heic');
+        formData.append('format', 'jpeg');
+        formData.append('quality', '90');
+
+        // Send to server for preview conversion
+        const response = await fetch('/process', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) throw new Error('Failed to convert HEIC for preview');
+
+        // Get the converted image blob
+        const blob = await response.blob();
+        img.src = URL.createObjectURL(blob);
+        img.alt = 'HEIC preview';
+        img.onload = () => {
+            updateImageInfo(img);
+            URL.revokeObjectURL(img.src);
+        };
+    } catch (error) {
+        console.error('Error previewing HEIC:', error);
+        img.src = '/static/images/heic-placeholder.svg';
+        img.alt = 'HEIC preview failed';
+    }
+
+    if (!elements.previewDiv.querySelector("img")) {
+        elements.previewDiv.appendChild(img);
+    }
+
+    elements.uploadArea.classList.add("border-green-500");
+    if (elements.uploadText) {
+        elements.uploadText.innerHTML = '<span class="text-green-500">HEIC file ready for processing</span>';
+    }
+    
+    // Force output format to something other than HEIC
+    if (elements.formatSelect && elements.formatSelect.value === "heic") {
+        elements.formatSelect.value = "jpeg";
+    }
+  }
 
   function updateImageInfo(img) {
     const dimensions = `${img.naturalWidth} × ${img.naturalHeight}px`;

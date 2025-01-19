@@ -52,14 +52,17 @@ Here are some images related to the project:
 
 ### Image Conversion Matrix
 
-| From ➡️ To ⬇️ | JPG/JPEG | PNG | WebP | GIF | BMP | HEIC/HEIF | PDF |
-|--------------|:---:|:---:|:----:|:---:|:---:|:---:| :---: |
-| **JPG/JPEG** | -   | ✅  | ✅   | ✅  | ✅ | ❌ | ✅   |
-| **PNG**      | ✅  | -   | ✅   | ✅  | ✅  | ❌ | ✅  |
-| **WebP**     | ✅  | ✅  | -    | ✅  | ✅  | ❌ | ✅  |
-| **GIF**      | ✅  | ✅  | ✅   | -   | ✅  | ❌ | ✅  |
-| **BMP**      | ✅  | ✅  | ✅   | ✅  | -   | ❌| ✅   |
-| **HEIC/HEIF**| ✅  | ✅  | ✅   | ✅  | ✅  | - | ✅   |
+| From ➡️ To ⬇️ | JPG/JPEG | PNG | WebP | GIF | BMP | HEIC/HEIF | PDF | ICO |
+|--------------|:---:|:---:|:----:|:---:|:---:|:---:| :---: |:---:|
+| **JPG/JPEG** | -   | ✅  | ✅   | ✅  | ✅ | ❌ | ✅   | ❌ |
+| **PNG**      | ✅  | -   | ✅   | ✅  | ✅  | ❌ | ✅  | ❌ |
+| **WebP**     | ✅  | ✅  | -    | ✅  | ✅  | ❌ | ✅  | ❌ |
+| **GIF**      | ✅  | ✅  | ✅   | -   | ✅  | ❌ | ✅  | ❌ |
+| **BMP**      | ✅  | ✅  | ✅   | ✅  | -   | ❌| ✅   | ❌ |
+| **HEIC/HEIF**| ✅  | ✅  | ✅   | ✅  | ✅  | - | ✅   | ❌ |
+| **ICO**      | ✅* | ✅  | ✅   | ✅  | ✅  | ❌ | ✅   | - |
+
+\* When converting ICO to JPEG, transparent backgrounds will be replaced with white.
 
 ### Document Conversion Matrix
 
@@ -82,6 +85,7 @@ Here are some images related to the project:
 | GIF    | ❌                | ❌           | ✅              |
 | BMP    | ❌                | ❌           | ✅              |
 | HEIC/HEIF | ❌             | ❌           | ✅              |
+| ICO    | ❌                | ❌           | ✅              |
 
 ## Notes
 
@@ -89,6 +93,7 @@ Here are some images related to the project:
 - No file storage - immediate delivery
 - Automatic cleanup
 - Input validation
+- ICO files with transparency will get a white background when converted to JPEG (due to JPEG format limitations)
 
 ## License
 This project is licensed under the [MIT License](LICENSE).

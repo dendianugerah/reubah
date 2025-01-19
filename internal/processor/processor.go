@@ -4,24 +4,26 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
+	"image/color"
+	"image/draw"
 	"image/gif"
+	_ "image/gif"
 	"image/jpeg"
+	_ "image/jpeg"
 	"image/png"
+	_ "image/png"
 	"io"
 	"math"
 	"os"
 	"path/filepath"
 
+	"github.com/MaestroError/go-libheif"
 	"github.com/chai2010/webp"
 	"github.com/dendianugerah/reubah/internal/processor/background"
 	"github.com/dendianugerah/reubah/internal/processor/optimize"
 	"github.com/dendianugerah/reubah/internal/processor/resize"
 	"github.com/disintegration/imaging"
 	"github.com/jung-kurt/gofpdf"
-	"github.com/MaestroError/go-libheif"
 	"golang.org/x/image/bmp"
 )
 
@@ -63,12 +65,47 @@ func DecodeHeic(r io.Reader) (image.Image, error) {
 	return jpeg.Decode(bytes.NewReader(jpegData))
 }
 
+// DecodeIco decodes ICO files and returns the highest quality icon
+func DecodeIco(r io.Reader) (image.Image, error) {
+	fmt.Println("Starting ICO decode...")
+
+	// Read the entire input
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try decoding as PNG first (many ICO files contain PNG data)
+	img, err := png.Decode(bytes.NewReader(data))
+	if err == nil {
+		fmt.Println("Successfully decoded as PNG")
+		return img, nil
+	}
+
+	// If PNG decode fails, try BMP decode
+	img, err = bmp.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode ICO file: %w", err)
+	}
+
+	// Convert to NRGBA
+	bounds := img.Bounds()
+	nrgba := image.NewNRGBA(bounds)
+	draw.Draw(nrgba, bounds, image.NewUniform(color.Transparent), image.Point{}, draw.Src)
+	draw.Draw(nrgba, bounds, img, bounds.Min, draw.Over)
+
+	fmt.Printf("Decoded image size: %dx%d\n", bounds.Dx(), bounds.Dy())
+	return nrgba, nil
+}
+
 func init() {
 	// Register HEIC format decoder
 	image.RegisterFormat("heic", "ftypheic", DecodeHeic, nil)
 	image.RegisterFormat("heif", "ftypheif", DecodeHeic, nil)
 	image.RegisterFormat("heic", "ftypmif1", DecodeHeic, nil) // For HEIF images from iOS
 	image.RegisterFormat("heic", "ftypmsf1", DecodeHeic, nil) // For HEIF images from iOS
+	// Register ICO format decoder
+	image.RegisterFormat("ico", "\x00\x00\x01\x00", DecodeIco, nil)
 }
 
 // ProcessOptions defines the options for image processing
@@ -133,7 +170,7 @@ func (p *ImageProcessor) ProcessImageData(img image.Image, opts ProcessOptions) 
 
 	// Add optimization step
 	if opts.OptimizeImage {
-		optimizeOpts := optimize.GetOptionsForQuality(opts.OutputFormat, 
+		optimizeOpts := optimize.GetOptionsForQuality(opts.OutputFormat,
 			optimize.QualityLevel(getQualityLevel(opts.Quality)))
 		var buf bytes.Buffer
 		if err := optimize.Optimize(&buf, img, opts.OutputFormat, optimizeOpts); err != nil {
@@ -162,29 +199,43 @@ type ProcessedImage struct {
 func (pi *ProcessedImage) Write(w io.Writer) error {
 	switch pi.Format {
 	case "jpeg", "jpg":
-		return jpeg.Encode(w, pi.Image, &jpeg.Options{Quality: pi.Quality})
-	case "png":
-		encoder := &png.Encoder{
-			CompressionLevel: png.CompressionLevel((pi.Quality * 9) / 100),
+		// Create a new white background image
+		bounds := pi.Image.Bounds()
+		bgImage := image.NewRGBA(bounds)
+
+		// Fill with white
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			for x := bounds.Min.X; x < bounds.Max.X; x++ {
+				bgImage.Set(x, y, color.White)
+			}
 		}
-		return encoder.Encode(w, pi.Image)
+
+		// Draw the original image over the white background
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			for x := bounds.Min.X; x < bounds.Max.X; x++ {
+				srcColor := pi.Image.At(x, y)
+				if _, _, _, a := srcColor.RGBA(); a > 0 {
+					bgImage.Set(x, y, srcColor)
+				}
+			}
+		}
+
+		return jpeg.Encode(w, bgImage, &jpeg.Options{Quality: pi.Quality})
+	case "png":
+		return png.Encode(w, pi.Image)
+	case "gif":
+		return gif.Encode(w, pi.Image, &gif.Options{
+			NumColors: 256,
+		})
+	case "bmp":
+		return bmp.Encode(w, pi.Image)
 	case "webp":
 		return webp.Encode(w, pi.Image, &webp.Options{
 			Lossless: pi.Quality == 100,
 			Quality:  float32(pi.Quality),
 		})
-	case "gif":
-		return gif.Encode(w, pi.Image, &gif.Options{
-			NumColors: (pi.Quality * 256) / 100,
-		})
-	case "bmp":
-		return bmp.Encode(w, pi.Image)
-	case "heic", "heif":
-		return encodeHEIC(w, pi.Image, pi.Quality)
-	case "pdf":
-		return convertToPDF(w, pi.Image, pi.Quality)
 	default:
-		return fmt.Errorf("unsupported format for writing: %s", pi.Format)
+		return fmt.Errorf("unsupported format: %s", pi.Format)
 	}
 }
 
@@ -199,6 +250,7 @@ func isValidFormat(format string) bool {
 		"heic": true,
 		"heif": true,
 		"pdf":  true,
+		"ico":  true,
 	}
 	return validFormats[format]
 }
