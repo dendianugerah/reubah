@@ -14,7 +14,8 @@ RUN apk add --no-cache \
     npm \
     libheif-dev \
     x265-dev \
-    libde265-dev
+    libde265-dev \
+    bash
 
 # Copy go.mod and go.sum first to leverage Docker cache
 COPY go.mod go.sum ./
