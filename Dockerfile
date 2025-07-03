@@ -37,6 +37,7 @@ WORKDIR /app
 
 # Install runtime dependencies
 RUN apk add --no-cache \
+    bash \
     libreoffice \
     ttf-liberation \
     libwebp \
