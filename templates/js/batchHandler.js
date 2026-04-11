@@ -6,7 +6,8 @@ document.addEventListener("DOMContentLoaded", function () {
         batchProcessBtn: document.getElementById("batchProcessBtn"),
         batchProgress: document.getElementById("batchProgress"),
         batchProgressBar: document.getElementById("batchProgressBar"),
-        batchProgressCount: document.getElementById("batchProgressCount")
+        batchProgressCount: document.getElementById("batchProgressCount"),
+        batchDownloadSuffixToggle: document.getElementById("batchDownloadWithSuffix")
     };
 
     const state = {
@@ -139,6 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // quality: document.getElementById('batchQualitySelect')?.value || 'medium',
             width: document.getElementById('batchWidthInput')?.value || '',
             height: document.getElementById('batchHeightInput')?.value || '',
+            downloadWithProcessedSuffix: elements.batchDownloadSuffixToggle?.checked || false,
             // optimize: document.getElementById('batchOptimize')?.checked || false
         };
     }
@@ -155,11 +157,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 
                 // Add processing options
                 for (const [key, value] of Object.entries(options)) {
+                    if (key === 'downloadWithProcessedSuffix') {
+                        continue;
+                    }
                     formData.append(key, value);
                 }
 
                 try {
-                    await processFile(formData);
+                    await processFile(formData, options.downloadWithProcessedSuffix);
                     processed++;
                 } catch (error) {
                     errors.push(`Failed to process ${file.name}: ${error.message}`);
@@ -209,7 +214,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    async function processFile(formData) {
+    async function processFile(formData, appendProcessedSuffix) {
         try {
             const response = await fetch("/process", {
                 method: "POST",
@@ -221,19 +226,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 throw new Error(error.message || "Processing failed");
             }
 
-            const blob = await response.blob();
             const originalName = formData.get("image").name;
             const format = formData.get("format") || "jpeg";
-            
-            // Get the original file extension
-            const originalExt = originalName.split('.').pop();
-            
-            // Create the new filename
-            const baseName = originalName.replace(`.${originalExt}`, '');
-            let filename = `processed_${baseName}.${format}`;
+            const fallbackName = buildDefaultDownloadName(originalName, format);
+            const filename = buildProcessedDownloadName(
+                getDownloadNameFromResponse(response, fallbackName),
+                appendProcessedSuffix
+            );
+            const blob = await response.blob();
             
             // Set the correct content type based on the format
-            const contentType = getContentType(format);
+            const contentType = response.headers.get("Content-Type") || getContentType(format);
             const processedBlob = new Blob([blob], { type: contentType });
             
             downloadFile(processedBlob, filename);
@@ -257,6 +260,108 @@ document.addEventListener("DOMContentLoaded", function () {
             'pdf': 'application/pdf'
         };
         return contentTypes[format] || 'application/octet-stream';
+    }
+
+    function getDownloadNameFromResponse(response, fallbackName) {
+        const headerName = parseContentDispositionFilename(
+            response.headers.get("Content-Disposition")
+        );
+
+        return headerName || fallbackName;
+    }
+
+    function parseContentDispositionFilename(headerValue) {
+        if (!headerValue) {
+            return "";
+        }
+
+        const encodedMatch = headerValue.match(/filename\*\s*=\s*([^;]+)/i);
+        if (encodedMatch) {
+            const encodedValue = encodedMatch[1].trim().replace(/^UTF-8''/i, "").replace(/^"|"$/g, "");
+            try {
+                return sanitizeFilename(decodeURIComponent(encodedValue));
+            } catch (error) {
+                console.warn("Unable to decode filename* header", error);
+            }
+        }
+
+        const quotedMatch = headerValue.match(/filename\s*=\s*"([^"]+)"/i);
+        if (quotedMatch) {
+            return sanitizeFilename(quotedMatch[1]);
+        }
+
+        const plainMatch = headerValue.match(/filename\s*=\s*([^;]+)/i);
+        return plainMatch ? sanitizeFilename(plainMatch[1]) : "";
+    }
+
+    function buildDefaultDownloadName(originalName, outputFormat) {
+        const safeOriginalName = sanitizeFilename(originalName);
+        const targetExtension = normalizeOutputExtension(outputFormat);
+
+        if (!safeOriginalName) {
+            return targetExtension ? `image.${targetExtension}` : "image";
+        }
+
+        const parts = splitFilename(safeOriginalName);
+        if (extensionsMatch(parts.extension, targetExtension)) {
+            return safeOriginalName;
+        }
+
+        return targetExtension ? `${parts.baseName}.${targetExtension}` : parts.baseName;
+    }
+
+    function buildProcessedDownloadName(filename, appendProcessedSuffix) {
+        const safeFilename = sanitizeFilename(filename);
+        if (!appendProcessedSuffix || !safeFilename) {
+            return safeFilename;
+        }
+
+        const parts = splitFilename(safeFilename);
+        return parts.extension
+            ? `${parts.baseName}_processed.${parts.extension}`
+            : `${parts.baseName}_processed`;
+    }
+
+    function splitFilename(filename) {
+        const safeFilename = sanitizeFilename(filename);
+        const lastDot = safeFilename.lastIndexOf(".");
+
+        if (lastDot <= 0) {
+            return {
+                baseName: safeFilename || "image",
+                extension: ""
+            };
+        }
+
+        return {
+            baseName: safeFilename.slice(0, lastDot),
+            extension: safeFilename.slice(lastDot + 1)
+        };
+    }
+
+    function sanitizeFilename(filename) {
+        return (filename || "")
+            .split(/[/\\]/)
+            .pop()
+            .replace(/[\r\n\0]/g, "")
+            .trim();
+    }
+
+    function normalizeOutputExtension(extension) {
+        return (extension || "").replace(/^\./, "").trim().toLowerCase();
+    }
+
+    function extensionsMatch(left, right) {
+        return normalizeComparableExtension(left) === normalizeComparableExtension(right);
+    }
+
+    function normalizeComparableExtension(extension) {
+        switch (normalizeOutputExtension(extension)) {
+            case "jpg":
+                return "jpeg";
+            default:
+                return normalizeOutputExtension(extension);
+        }
     }
 
     function downloadFile(blob, filename) {

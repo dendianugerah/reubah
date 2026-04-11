@@ -209,6 +209,13 @@
                            }">
                 </div>
             </div>
+
+            <label for="batchDownloadWithSuffix" class="inline-flex items-center gap-3 text-sm cursor-pointer transition-colors"
+                   :class="{ 'text-darkTextSecondary': darkMode, 'text-gray-600': !darkMode }">
+                <input id="batchDownloadWithSuffix" type="checkbox"
+                       class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                <span>Add <span class="font-medium">_processed</span> suffix to downloaded filenames</span>
+            </label>
         </div>
 
         <div x-show="processingMode === 'merge-pdf'" class="space-y-4">
