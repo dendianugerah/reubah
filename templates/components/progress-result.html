@@ -66,7 +66,13 @@
                     </div>
                 </div>
 
-                <div class="flex justify-end">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <label for="downloadWithSuffix" class="inline-flex items-center gap-3 text-sm cursor-pointer transition-colors"
+                           :class="{ 'text-darkTextSecondary': darkMode, 'text-gray-600': !darkMode }">
+                        <input id="downloadWithSuffix" type="checkbox"
+                               class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <span>Add <span class="font-medium">_processed</span> suffix</span>
+                    </label>
                     <a href="#" class="download-btn inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
                        :class="{ 
                            'text-darkTextPrimary bg-darkAccent hover:bg-darkAccentHover focus:ring-darkAccent': darkMode,

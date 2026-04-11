@@ -10,7 +10,13 @@ document.addEventListener("DOMContentLoaded", function () {
     removeBackground: document.getElementById("removeBackground"),
     bgRemovalOptions: document.getElementById("bgRemovalOptions"),
     resizeModeSelect: document.getElementById("resizeModeSelect"),
-    optimize: document.getElementById("optimize")
+    optimize: document.getElementById("optimize"),
+    downloadSuffixToggle: document.getElementById("downloadWithSuffix")
+  };
+
+  const state = {
+    defaultDownloadName: "",
+    resultUrl: ""
   };
 
   // Validate required elements
@@ -32,6 +38,10 @@ document.addEventListener("DOMContentLoaded", function () {
         elements.bgRemovalOptions.classList.toggle("hidden", !elements.removeBackground.checked);
       }
     });
+  }
+
+  if (elements.downloadSuffixToggle) {
+    elements.downloadSuffixToggle.addEventListener("change", updateDownloadButton);
   }
 
   // Handle form submission
@@ -182,7 +192,7 @@ function createFormData() {
             throw new Error(errorData.error?.message || errorData.message || "Processing failed");
         }
 
-        await handleSuccess(response, elements.formatSelect?.value || "jpeg");
+        await handleSuccess(response, fileInput.files[0], elements.formatSelect?.value || "jpeg");
     } catch (error) {
         console.error("Processing error:", error);
         showError(error.message || "Failed to process image");
@@ -226,33 +236,167 @@ function createFormData() {
     setTimeout(() => errorDiv.remove(), 5000);
   }
 
-  async function handleSuccess(response, format) {
+  async function handleSuccess(response, originalFile, format) {
     if (!elements.result) {
       console.error("Result element not found");
       return;
     }
 
     const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
+    if (state.resultUrl) {
+      URL.revokeObjectURL(state.resultUrl);
+    }
+    state.resultUrl = URL.createObjectURL(blob);
+
+    const fallbackName = buildDefaultDownloadName(originalFile?.name || "", format);
+    state.defaultDownloadName = getDownloadNameFromResponse(response, fallbackName);
 
     const resultPreview = elements.result.querySelector(".result-preview");
-    const resultInfo = elements.result.querySelector(".result-info");
+    const originalSize = elements.result.querySelector(".original-size");
+    const newSize = elements.result.querySelector(".new-size");
 
-    if (resultPreview && resultInfo) {
-      resultPreview.innerHTML = `<img src="${url}" alt="Processed image" class="max-w-full rounded-lg">`;
-      resultInfo.innerHTML = `
-        <div class="flex justify-between items-center">
-          <p class="text-sm text-gray-600">Size: ${(blob.size / 1024).toFixed(2)} KB</p>
-          <a href="${url}" 
-             download="processed.${format}" 
-             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-            Download Image
-          </a>
-        </div>
-      `;
+    if (resultPreview) {
+      resultPreview.innerHTML = `<img src="${state.resultUrl}" alt="Processed image" class="max-w-full rounded-lg">`;
     }
 
+    if (originalSize) {
+      originalSize.textContent = formatFileSize(originalFile?.size || 0);
+    }
+
+    if (newSize) {
+      newSize.textContent = formatFileSize(blob.size);
+    }
+
+    updateDownloadButton();
+
     elements.result.style.display = "block";
+  }
+
+  function updateDownloadButton() {
+    const downloadButton = elements.result?.querySelector(".download-btn");
+    if (!downloadButton || !state.resultUrl || !state.defaultDownloadName) {
+      return;
+    }
+
+    downloadButton.href = state.resultUrl;
+    downloadButton.download = buildProcessedDownloadName(
+      state.defaultDownloadName,
+      elements.downloadSuffixToggle?.checked || false
+    );
+  }
+
+  function getDownloadNameFromResponse(response, fallbackName) {
+    const headerName = parseContentDispositionFilename(
+      response.headers.get("Content-Disposition")
+    );
+
+    return headerName || fallbackName;
+  }
+
+  function parseContentDispositionFilename(headerValue) {
+    if (!headerValue) {
+      return "";
+    }
+
+    const encodedMatch = headerValue.match(/filename\*\s*=\s*([^;]+)/i);
+    if (encodedMatch) {
+      const encodedValue = encodedMatch[1].trim().replace(/^UTF-8''/i, "").replace(/^"|"$/g, "");
+      try {
+        return sanitizeFilename(decodeURIComponent(encodedValue));
+      } catch (error) {
+        console.warn("Unable to decode filename* header", error);
+      }
+    }
+
+    const quotedMatch = headerValue.match(/filename\s*=\s*"([^"]+)"/i);
+    if (quotedMatch) {
+      return sanitizeFilename(quotedMatch[1]);
+    }
+
+    const plainMatch = headerValue.match(/filename\s*=\s*([^;]+)/i);
+    return plainMatch ? sanitizeFilename(plainMatch[1]) : "";
+  }
+
+  function buildDefaultDownloadName(originalName, outputFormat) {
+    const safeOriginalName = sanitizeFilename(originalName);
+    const targetExtension = normalizeOutputExtension(outputFormat);
+
+    if (!safeOriginalName) {
+      return targetExtension ? `image.${targetExtension}` : "image";
+    }
+
+    const parts = splitFilename(safeOriginalName);
+    if (extensionsMatch(parts.extension, targetExtension)) {
+      return safeOriginalName;
+    }
+
+    return targetExtension ? `${parts.baseName}.${targetExtension}` : parts.baseName;
+  }
+
+  function buildProcessedDownloadName(filename, appendProcessedSuffix) {
+    const safeFilename = sanitizeFilename(filename);
+    if (!appendProcessedSuffix || !safeFilename) {
+      return safeFilename;
+    }
+
+    const parts = splitFilename(safeFilename);
+    return parts.extension
+      ? `${parts.baseName}_processed.${parts.extension}`
+      : `${parts.baseName}_processed`;
+  }
+
+  function splitFilename(filename) {
+    const safeFilename = sanitizeFilename(filename);
+    const lastDot = safeFilename.lastIndexOf(".");
+
+    if (lastDot <= 0) {
+      return {
+        baseName: safeFilename || "image",
+        extension: ""
+      };
+    }
+
+    return {
+      baseName: safeFilename.slice(0, lastDot),
+      extension: safeFilename.slice(lastDot + 1)
+    };
+  }
+
+  function sanitizeFilename(filename) {
+    return (filename || "")
+      .split(/[/\\]/)
+      .pop()
+      .replace(/[\r\n\0]/g, "")
+      .trim();
+  }
+
+  function normalizeOutputExtension(extension) {
+    return (extension || "").replace(/^\./, "").trim().toLowerCase();
+  }
+
+  function extensionsMatch(left, right) {
+    return normalizeComparableExtension(left) === normalizeComparableExtension(right);
+  }
+
+  function normalizeComparableExtension(extension) {
+    switch (normalizeOutputExtension(extension)) {
+      case "jpg":
+        return "jpeg";
+      default:
+        return normalizeOutputExtension(extension);
+    }
+  }
+
+  function formatFileSize(bytes) {
+    if (!bytes) {
+      return "0 KB";
+    }
+
+    if (bytes >= 1024 * 1024) {
+      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    return `${(bytes / 1024).toFixed(2)} KB`;
   }
 
   function updateQuickActionStyles(button) {

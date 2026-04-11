@@ -7,14 +7,17 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"log"
+	"mime"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
 
+	"github.com/dendianugerah/reubah/internal/constants"
 	"github.com/dendianugerah/reubah/internal/processor"
 	"github.com/dendianugerah/reubah/internal/processor/resize"
 	"github.com/dendianugerah/reubah/internal/validator"
 	"github.com/dendianugerah/reubah/pkg/errors"
-	"github.com/dendianugerah/reubah/internal/constants"
 )
 
 func ProcessImage(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +26,7 @@ func ProcessImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	opts, img, err := parseRequest(r)
+	opts, img, originalFilename, err := parseRequest(r)
 	if err != nil {
 		errors.SendError(w, err)
 		return
@@ -35,40 +38,40 @@ func ProcessImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendResponse(w, processedImage, opts.OutputFormat)
+	sendResponse(w, processedImage, originalFilename, opts.OutputFormat)
 }
 
-func parseRequest(r *http.Request) (processor.ProcessOptions, image.Image, error) {
-	img, err := getAndValidateImage(r)
+func parseRequest(r *http.Request) (processor.ProcessOptions, image.Image, string, error) {
+	img, originalFilename, err := getAndValidateImage(r)
 	if err != nil {
-		return processor.ProcessOptions{}, nil, err
+		return processor.ProcessOptions{}, nil, "", err
 	}
 
 	opts, err := parseOptions(r)
 	if err != nil {
-		return processor.ProcessOptions{}, nil, err
+		return processor.ProcessOptions{}, nil, "", err
 	}
 
-	return opts, img, nil
+	return opts, img, originalFilename, nil
 }
 
-func getAndValidateImage(r *http.Request) (image.Image, error) {
-	file, _, err := r.FormFile("image")
+func getAndValidateImage(r *http.Request) (image.Image, string, error) {
+	file, header, err := r.FormFile("image")
 	if err != nil {
-		return nil, errors.New(errors.ErrInvalidFormat, "No file uploaded", err)
+		return nil, "", errors.New(errors.ErrInvalidFormat, "No file uploaded", err)
 	}
 	defer file.Close()
 
 	if err := validator.ValidateMIMEType(file); err != nil {
-		return nil, errors.New(errors.ErrInvalidMIME, "Invalid file type", err)
+		return nil, "", errors.New(errors.ErrInvalidMIME, "Invalid file type", err)
 	}
 
 	img, _, err := image.Decode(file)
 	if err != nil {
-		return nil, errors.New(errors.ErrInvalidFormat, "Invalid image file", err)
+		return nil, "", errors.New(errors.ErrInvalidFormat, "Invalid image file", err)
 	}
 
-	return img, nil
+	return img, header.Filename, nil
 }
 
 func parseOptions(r *http.Request) (processor.ProcessOptions, error) {
@@ -113,12 +116,80 @@ func processImage(img image.Image, opts processor.ProcessOptions) (*processor.Pr
 	return proc.ProcessImageData(img, opts)
 }
 
-func sendResponse(w http.ResponseWriter, img *processor.ProcessedImage, format string) {
+func sendResponse(w http.ResponseWriter, img *processor.ProcessedImage, originalFilename, format string) {
+	downloadFilename := buildImageDownloadFilename(originalFilename, format)
+	contentDisposition := mime.FormatMediaType("attachment", map[string]string{"filename": downloadFilename})
+	if contentDisposition == "" {
+		contentDisposition = fmt.Sprintf(`attachment; filename="%s"`, downloadFilename)
+	}
+
 	w.Header().Set("Content-Type", fmt.Sprintf("image/%s", format))
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=processed.%s", format))
+	w.Header().Set("Content-Disposition", contentDisposition)
 
 	if err := img.Write(w); err != nil {
 		log.Printf("Error writing response: %v", err)
+	}
+}
+
+func buildImageDownloadFilename(originalFilename, format string) string {
+	cleanFilename := sanitizeUploadedFilename(originalFilename)
+	targetExtension := normalizeImageExtension(format)
+
+	if cleanFilename == "" {
+		if targetExtension == "" {
+			return "image"
+		}
+		return fmt.Sprintf("image.%s", targetExtension)
+	}
+
+	originalExtension := strings.TrimPrefix(strings.ToLower(filepath.Ext(cleanFilename)), ".")
+	if imageExtensionsMatch(originalExtension, targetExtension) {
+		return cleanFilename
+	}
+
+	baseName := strings.TrimSuffix(cleanFilename, filepath.Ext(cleanFilename))
+	if baseName == "" {
+		baseName = "image"
+	}
+	if targetExtension == "" {
+		return baseName
+	}
+
+	return fmt.Sprintf("%s.%s", baseName, targetExtension)
+}
+
+func sanitizeUploadedFilename(filename string) string {
+	cleanFilename := strings.TrimSpace(filepath.Base(filename))
+	cleanFilename = strings.Map(func(r rune) rune {
+		switch r {
+		case '\r', '\n', 0:
+			return -1
+		default:
+			return r
+		}
+	}, cleanFilename)
+
+	if cleanFilename == "." {
+		return ""
+	}
+
+	return cleanFilename
+}
+
+func normalizeImageExtension(extension string) string {
+	return strings.TrimPrefix(strings.ToLower(strings.TrimSpace(extension)), ".")
+}
+
+func imageExtensionsMatch(originalExtension, targetExtension string) bool {
+	return comparableImageExtension(originalExtension) == comparableImageExtension(targetExtension)
+}
+
+func comparableImageExtension(extension string) string {
+	switch normalizeImageExtension(extension) {
+	case "jpg":
+		return "jpeg"
+	default:
+		return normalizeImageExtension(extension)
 	}
 }
 
