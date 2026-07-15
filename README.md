@@ -1,94 +1,106 @@
-# Reubah - Universal File Converter & Image Processor
+# Reubah
 
-a simple web-based tool for processing images and converting documents with a simple interface
+Reubah is an API-first file conversion project with a Bun + Hono API, a TanStack web app, and an OpenAPI contract.
 
 ## Features
 
-- [x] File Converter (Keep on adding more formats)
-- [x] Dark Mode
-- [ ] API
-- [ ] Background Removal for Images
-  
+- Public REST API for image and document conversion
+- Scalar API reference served from the OpenAPI contract
+- TypeScript client package for the public API
+- TanStack Router and TanStack Query web app
+- Direct image conversion with `sharp`, `pdf-lib`, and `bmp-js`
+- Direct document conversion through LibreOffice
+
 ## Quick Start
 
-### Using Docker
+### Docker
+
 ```bash
 git clone https://github.com/dendianugerah/reubah.git
 cd reubah
 docker-compose up -d
 ```
-or create a folder for the project and run
-```bash
-docker run -d --name reubah -p 8081:8081 -v doc-temp:/tmp -e PORT=8081 --restart unless-stopped ghcr.io/dendianugerah/reubah:latest
+
+API:
+
+```text
+http://localhost:8787
 ```
-Access at: `http://localhost:8081`
+
+API reference:
+
+```text
+http://localhost:8787/reference
+```
 
 ### Local Development
+
 Requirements:
-- Go 1.22+
-- LibreOffice (for document conversion)
-- GCC/G++
+
+- Bun
+- LibreOffice for document conversion
 
 ```bash
-go mod download
-go run cmd/server/main.go
+bun install
+bun run api:dev
 ```
 
-## Images
+Run the web app in a second terminal:
 
-Here are some images related to the project:
+```bash
+bun run web:dev
+```
 
-![Home](static/assets/home.png)
-![Document Processing](static/assets/document.png)
-![Merge](static/assets/merge.png)
+## API
 
-## Format Support & Compatibility
+```http
+GET  /v1/health
+GET  /v1/capabilities
+POST /v1/image-conversions
+POST /v1/document-conversions
+GET  /openapi.json
+GET  /reference
+```
 
-> **Matrix Guide:**
-> - Find your source format in the left column
-> - Follow the row to find available output formats
-> - ✅ = Supported conversion
-> - `-` = Same format (no conversion needed)
+The canonical contract lives at `openapi/v1.yaml`.
 
-### Image Conversion Matrix
+## Format Support
 
-| From ➡️ To ⬇️ | JPG/JPEG | PNG | WebP | GIF | BMP | HEIC/HEIF | PDF |
-|--------------|:---:|:---:|:----:|:---:|:---:|:---:| :---: |
-| **JPG/JPEG** | -   | ✅  | ✅   | ✅  | ✅ | ❌ | ✅   |
-| **PNG**      | ✅  | -   | ✅   | ✅  | ✅  | ❌ | ✅  |
-| **WebP**     | ✅  | ✅  | -    | ✅  | ✅  | ❌ | ✅  |
-| **GIF**      | ✅  | ✅  | ✅   | -   | ✅  | ❌ | ✅  |
-| **BMP**      | ✅  | ✅  | ✅   | ✅  | -   | ❌| ✅   |
-| **HEIC/HEIF**| ✅  | ✅  | ✅   | ✅  | ✅  | - | ✅   |
+Image inputs:
 
-### Document Conversion Matrix
+```text
+jpg, jpeg, png, webp, gif, bmp, heic, heif
+```
 
-| From ➡️ To ⬇️ | PDF | DOCX | DOC | ODT | RTF | TXT |
-|--------------|:---:|:----:|:---:|:---:|:---:|:---:|
-| **PDF** (from PDF currently still bad)     | -   | ✅   | ✅  | ❌  | ❌  | ❌  |
-| **DOCX**     | ✅  | -    | ✅  | ✅  | ✅  | ✅  |
-| **DOC**      | ✅  | ✅   | -   | ✅  | ✅  | ✅  |
-| **ODT**      | ✅  | ✅   | ✅  | -   | ✅  | ✅  |
-| **RTF**      | ✅  | ✅   | ✅  | ✅  | -   | ✅  |
-| **TXT**      | ✅  | ✅   | ✅  | ✅  | ✅  | -   |
+Image outputs:
 
-### Additional Image Features
+```text
+jpg, jpeg, png, webp, gif, bmp, heic, heif, pdf
+```
 
-| Format | Background Removal (Soon) | Optimization | Batch Processing |
-|--------|:-----------------:|:------------:|:---------------:|
-| JPG/JPEG | ❌              | ✅           | ✅              |
-| PNG    | ❌                | ❌           | ✅              |
-| WebP   | ❌                | ❌           | ✅              |
-| GIF    | ❌                | ❌           | ✅              |
-| BMP    | ❌                | ❌           | ✅              |
-| HEIC/HEIF | ❌             | ❌           | ✅              |
+Document inputs and outputs:
+
+```text
+pdf, doc, docx, odt, rtf, txt
+```
+
+## Commands
+
+```bash
+bun run check
+bun run api:test
+bun run api:typecheck
+bun run web:typecheck
+bun run client:test
+```
 
 ## Notes
 
-- Isolated processing environment
-- No file storage - immediate delivery
-- Automatic cleanup
-- Input validation
+- Files are processed synchronously and returned directly.
+- Temporary document conversion files are cleaned up after each request.
+- Missing LibreOffice returns `503 converter-unavailable`.
+- API keys, accounts, billing, usage tracking, rate limits, async jobs, and npm local conversion packages are deferred.
 
 ## License
+
 This project is licensed under the [MIT License](LICENSE).

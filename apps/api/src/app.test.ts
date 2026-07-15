@@ -1,14 +1,8 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
+import sharp from "sharp";
 
 import { createApp } from "./app";
 import { maxMultipartBodyBytes } from "./http/multipart";
-import { requestIdHeader } from "./http/request-id";
-
-const originalFetch = globalThis.fetch;
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
 
 describe("Reubah API shell", () => {
   test("returns health metadata", async () => {
@@ -106,17 +100,6 @@ describe("Reubah API shell", () => {
 
   test("rejects oversized multipart requests before parsing the body", async () => {
     const app = createApp();
-    let legacyFetchCalled = false;
-
-    globalThis.fetch = (async (input, init) => {
-      void input;
-      void init;
-      legacyFetchCalled = true;
-
-      return new Response("unexpected legacy response", {
-        status: 500,
-      });
-    }) as typeof fetch;
 
     const response = await app.request("/v1/image-conversions", {
       method: "POST",
@@ -129,7 +112,6 @@ describe("Reubah API shell", () => {
     const problem = await response.json();
 
     expect(response.status).toBe(413);
-    expect(legacyFetchCalled).toBe(false);
     expect(response.headers.get("Content-Type")).toContain("application/problem+json");
     expect(problem).toMatchObject({
       type: "https://docs.reubah.com/errors/payload-too-large",
@@ -163,17 +145,6 @@ describe("Reubah API shell", () => {
 
   test("rejects non-multipart conversion requests", async () => {
     const app = createApp();
-    let legacyFetchCalled = false;
-
-    globalThis.fetch = (async (input, init) => {
-      void input;
-      void init;
-      legacyFetchCalled = true;
-
-      return new Response("unexpected legacy response", {
-        status: 500,
-      });
-    }) as typeof fetch;
 
     const response = await app.request("/v1/image-conversions", {
       method: "POST",
@@ -187,7 +158,6 @@ describe("Reubah API shell", () => {
     const problem = await response.json();
 
     expect(response.status).toBe(415);
-    expect(legacyFetchCalled).toBe(false);
     expect(problem).toMatchObject({
       type: "https://docs.reubah.com/errors/unsupported-media-type",
       title: "Unsupported media type",
@@ -214,23 +184,12 @@ describe("Reubah API shell", () => {
     });
   });
 
-  test("rejects unsupported image input formats before calling the legacy API", async () => {
+  test("rejects unsupported image input formats before converting", async () => {
     const app = createApp();
     const body = new FormData();
-    let legacyFetchCalled = false;
 
     body.set("file", new File(["svg-bytes"], "vector.svg", { type: "image/svg+xml" }));
     body.set("output_format", "webp");
-
-    globalThis.fetch = (async (input, init) => {
-      void input;
-      void init;
-      legacyFetchCalled = true;
-
-      return new Response("unexpected legacy response", {
-        status: 500,
-      });
-    }) as typeof fetch;
 
     const response = await app.request("/v1/image-conversions", {
       method: "POST",
@@ -239,7 +198,6 @@ describe("Reubah API shell", () => {
     const problem = await response.json();
 
     expect(response.status).toBe(415);
-    expect(legacyFetchCalled).toBe(false);
     expect(problem).toMatchObject({
       type: "https://docs.reubah.com/errors/unsupported-media-type",
       title: "Unsupported media type",
@@ -248,50 +206,41 @@ describe("Reubah API shell", () => {
     });
   });
 
-  test("bridges image conversion requests to the legacy Go API", async () => {
+  test("converts image requests in TypeScript", async () => {
     const app = createApp();
     const requestBody = new FormData();
-    requestBody.set("file", new File(["image-bytes"], "photo.png", { type: "image/png" }));
+    const png = await sharp({
+      create: {
+        width: 2,
+        height: 2,
+        channels: 4,
+        background: {
+          r: 255,
+          g: 0,
+          b: 0,
+          alpha: 1,
+        },
+      },
+    })
+      .png()
+      .toBuffer();
+
+    requestBody.set("file", new File([png], "photo.png", { type: "image/png" }));
     requestBody.set("output_format", "webp");
     requestBody.set("quality", "high");
-    requestBody.set("width", "1200");
+    requestBody.set("width", "1");
     requestBody.set("resize_mode", "fill");
     requestBody.set("optimize", "true");
 
-    globalThis.fetch = (async (input, init) => {
-      expect(input).toBe("http://localhost:8081/process");
-      expect(init?.method).toBe("POST");
-      expect(init?.body).toBeInstanceOf(FormData);
-      expect(new Headers(init?.headers).get(requestIdHeader)).toBe("req_image_bridge");
-
-      const upstreamBody = init?.body as FormData;
-      expect(upstreamBody.get("image")).toBeInstanceOf(File);
-      expect(upstreamBody.get("format")).toBe("webp");
-      expect(upstreamBody.get("quality")).toBe("high");
-      expect(upstreamBody.get("width")).toBe("1200");
-      expect(upstreamBody.get("resizeMode")).toBe("fill");
-      expect(upstreamBody.get("optimize")).toBe("true");
-
-      return new Response("converted-image", {
-        status: 200,
-        headers: {
-          "Content-Type": "image/webp",
-        },
-      });
-    }) as typeof fetch;
-
     const response = await app.request("/v1/image-conversions", {
       method: "POST",
-      headers: {
-        [requestIdHeader]: "req_image_bridge",
-      },
       body: requestBody,
     });
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("image/webp");
     expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="photo.webp"');
-    expect(await response.text()).toBe("converted-image");
+    expect((await response.arrayBuffer()).byteLength).toBeGreaterThan(0);
   });
 
   test("validates document conversion multipart requests", async () => {
@@ -314,10 +263,9 @@ describe("Reubah API shell", () => {
     });
   });
 
-  test("rejects unsupported document input formats before calling the legacy API", async () => {
+  test("rejects unsupported document input formats before converting", async () => {
     const app = createApp();
     const body = new FormData();
-    let legacyFetchCalled = false;
 
     body.set(
       "file",
@@ -327,16 +275,6 @@ describe("Reubah API shell", () => {
     );
     body.set("output_format", "pdf");
 
-    globalThis.fetch = (async (input, init) => {
-      void input;
-      void init;
-      legacyFetchCalled = true;
-
-      return new Response("unexpected legacy response", {
-        status: 500,
-      });
-    }) as typeof fetch;
-
     const response = await app.request("/v1/document-conversions", {
       method: "POST",
       body,
@@ -344,7 +282,6 @@ describe("Reubah API shell", () => {
     const problem = await response.json();
 
     expect(response.status).toBe(415);
-    expect(legacyFetchCalled).toBe(false);
     expect(problem).toMatchObject({
       type: "https://docs.reubah.com/errors/unsupported-media-type",
       title: "Unsupported media type",
@@ -353,41 +290,20 @@ describe("Reubah API shell", () => {
     });
   });
 
-  test("bridges document conversion requests to the legacy Go API", async () => {
+  test("returns same-format document conversions in TypeScript", async () => {
     const app = createApp();
     const requestBody = new FormData();
-    requestBody.set("file", new File(["document-bytes"], "report.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }));
-    requestBody.set("output_format", "pdf");
-
-    globalThis.fetch = (async (input, init) => {
-      expect(input).toBe("http://localhost:8081/process/document");
-      expect(init?.method).toBe("POST");
-      expect(init?.body).toBeInstanceOf(FormData);
-      expect(new Headers(init?.headers).get(requestIdHeader)).toBe("req_document_bridge");
-
-      const upstreamBody = init?.body as FormData;
-      expect(upstreamBody.get("document")).toBeInstanceOf(File);
-      expect(upstreamBody.get("format")).toBe("pdf");
-
-      return new Response("converted-document", {
-        status: 200,
-        headers: {
-          "Content-Type": "application/pdf",
-        },
-      });
-    }) as typeof fetch;
+    requestBody.set("file", new File(["document-bytes"], "report.txt", { type: "text/plain" }));
+    requestBody.set("output_format", "txt");
 
     const response = await app.request("/v1/document-conversions", {
       method: "POST",
-      headers: {
-        [requestIdHeader]: "req_document_bridge",
-      },
       body: requestBody,
     });
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Type")).toBe("application/pdf");
-    expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="report.pdf"');
-    expect(await response.text()).toBe("converted-document");
+    expect(response.headers.get("Content-Type")).toBe("text/plain");
+    expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="report.txt"');
+    expect(await response.text()).toBe("document-bytes");
   });
 });

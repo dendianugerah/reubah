@@ -1,65 +1,30 @@
-# Build stage
-FROM golang:1.22-alpine AS builder
+FROM oven/bun:1-debian
 
 WORKDIR /app
 
-# Install build dependencies
-RUN apk add --no-cache \
-    gcc \
-    g++ \
-    pkgconfig \
-    libwebp-dev \
-    musl-dev \
-    libheif-dev \
-    x265-dev \
-    libde265-dev \
-    bash
-
-# Copy go.mod and go.sum first to leverage Docker cache
-COPY go.mod go.sum ./
-RUN go mod download
-
-# Copy application code and build
-COPY . ./
-RUN CGO_ENABLED=1 go build -o reubah ./cmd/server
-
-# Runtime stage
-FROM alpine:3.19
-
-WORKDIR /app
-
-# Install runtime dependencies
-RUN apk add --no-cache \
-    bash \
-    libreoffice \
-    ttf-liberation \
-    libwebp \
-    openjdk11-jre \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     curl \
-    libheif-dev \
-    x265-dev \
-    libde265-dev
+    fonts-liberation \
+    libreoffice \
+  && rm -rf /var/lib/apt/lists/*
 
-# Create directories for LibreOffice
-RUN mkdir -p /tmp/.cache /tmp/.config /tmp/.local
+COPY package.json bun.lock ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY packages/client/package.json packages/client/package.json
 
-# Copy binary
-COPY --from=builder /app/reubah /app/reubah
+RUN bun install --frozen-lockfile
 
-# Create non-root user
-RUN addgroup -g 1000 appgroup && \
-    adduser -u 1000 -G appgroup -D appuser && \
-    chown -R appuser:appgroup /app /tmp/.cache /tmp/.config /tmp/.local
+COPY . .
 
-USER appuser
-
-# Set environment variables for LibreOffice
+ENV NODE_ENV=production
+ENV PORT=8787
 ENV HOME=/tmp
 
-EXPOSE 8081
+EXPOSE 8787
 
-# Add health check
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost:8081/health || exit 1
+  CMD curl -f http://localhost:8787/v1/health || exit 1
 
-CMD ["/app/reubah"]
+CMD ["bun", "run", "api:start"]

@@ -6,7 +6,7 @@ This document defines the public API direction for the first refactor pass. It c
 
 1. API contract
 2. TypeScript API shell
-3. Existing converter bridge
+3. TypeScript conversion services
 4. TanStack web app
 5. Docs site
 
@@ -16,7 +16,7 @@ Authentication, API keys, billing, usage limits, and account dashboards are inte
 
 - Use `/v1` from the first public contract.
 - Use resource-oriented endpoint names, not UI or handler names.
-- Keep routes stable even if conversion internals move from Go to TypeScript.
+- Keep routes stable even if conversion internals change.
 - Make the web app consume the same public API documented for external users.
 - Return binary files directly for synchronous conversions.
 - Use `application/problem+json` for errors.
@@ -148,7 +148,7 @@ Recommended status codes:
 Convert an image:
 
 ```bash
-curl -X POST http://localhost:8081/v1/image-conversions \
+curl -X POST http://localhost:8787/v1/image-conversions \
   -F "file=@photo.png" \
   -F "output_format=webp" \
   -F "quality=high" \
@@ -158,7 +158,7 @@ curl -X POST http://localhost:8081/v1/image-conversions \
 Convert a document:
 
 ```bash
-curl -X POST http://localhost:8081/v1/document-conversions \
+curl -X POST http://localhost:8787/v1/document-conversions \
   -F "file=@report.docx" \
   -F "output_format=pdf" \
   --output report.pdf

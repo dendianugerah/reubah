@@ -26,14 +26,13 @@ Default:
 http://localhost:8787
 ```
 
-Local bridge setup:
+Local setup:
 
 ```bash
-bun run legacy:dev
 bun run api:dev
 bun run web:dev
 ```
 
 ## Current Scope
 
-The scaffold currently verifies API connectivity and renders supported image/document capabilities. The image and document conversion workflows are the next implementation slices.
+The app verifies API connectivity, renders supported capabilities, and posts image conversions through the public API. Document conversion UI is the next implementation slice.

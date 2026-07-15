@@ -1,7 +1,0 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-[x-cloak] { display: none !important; }
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
-.fade-enter, .fade-leave-to { opacity: 0; }

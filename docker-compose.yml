@@ -2,10 +2,13 @@ version: '3.8'
 
 services:
   reubah:
-    image: ghcr.io/dendianugerah/reubah:latest
+    build: .
+    image: reubah-api:local
     container_name: reubah
     ports:
-      - "8081:8081"
+      - "8787:8787"
+    environment:
+      PORT: "8787"
     security_opt:
       - no-new-privileges:true
     cap_drop:

@@ -11,6 +11,7 @@
     "noEmit": true
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.d.ts"
   ]
 }

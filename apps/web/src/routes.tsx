@@ -79,7 +79,7 @@ function Dashboard() {
           <p className="eyebrow">Image workflow</p>
           <h1>File conversion workspace</h1>
           <p className="muted">
-            Convert images through the public TypeScript API while the conversion engine remains isolated behind the bridge.
+            Convert images through the public TypeScript API with the conversion service kept behind the API boundary.
           </p>
         </div>
         <ApiStatus loading={health.isLoading} error={health.error} service={health.data?.service} version={health.data?.version} />

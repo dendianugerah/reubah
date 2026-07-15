@@ -8,7 +8,7 @@ info:
     This first public contract is unauthenticated by design;
     API keys and usage limits are deferred until a later product phase.
 servers:
-  - url: http://localhost:8081
+  - url: http://localhost:8787
     description: Local development
   - url: https://api.reubah.com
     description: Production

@@ -8,11 +8,8 @@ import { getConvertedFilename, getDocumentContentType, getImageContentType } fro
 import { downloadResponse } from "../http/download";
 import { readMultipartFormData } from "../http/multipart";
 import { problem } from "../http/problem";
-import {
-  convertDocumentWithLegacyApi,
-  convertImageWithLegacyApi,
-  LegacyConverterError,
-} from "../services/legacy-converter";
+import { convertDocument, DocumentConverterError } from "../services/document-converter";
+import { convertImage, ImageConverterError } from "../services/image-converter";
 
 type ApiEnv = {
   Variables: {
@@ -35,14 +32,12 @@ conversionRoutes.post("/image-conversions", async (c) => {
     return problem(c, conversion);
   }
 
-  let response: Response;
+  let converted: ArrayBuffer;
 
   try {
-    response = await convertImageWithLegacyApi(conversion.file, conversion.options, {
-      requestId: c.get("requestId"),
-    });
+    converted = await convertImage(conversion.file, conversion.options);
   } catch (error) {
-    if (error instanceof LegacyConverterError) {
+    if (error instanceof ImageConverterError) {
       return problem(c, error);
     }
 
@@ -52,7 +47,7 @@ conversionRoutes.post("/image-conversions", async (c) => {
   const filename = getConvertedFilename(conversion.file.name, conversion.options.output_format);
 
   return downloadResponse({
-    body: response.body,
+    body: converted,
     contentType: getImageContentType(conversion.options.output_format),
     filename,
   });
@@ -71,14 +66,12 @@ conversionRoutes.post("/document-conversions", async (c) => {
     return problem(c, conversion);
   }
 
-  let response: Response;
+  let converted: ArrayBuffer;
 
   try {
-    response = await convertDocumentWithLegacyApi(conversion.file, conversion.options, {
-      requestId: c.get("requestId"),
-    });
+    converted = await convertDocument(conversion.file, conversion.options);
   } catch (error) {
-    if (error instanceof LegacyConverterError) {
+    if (error instanceof DocumentConverterError) {
       return problem(c, error);
     }
 
@@ -88,7 +81,7 @@ conversionRoutes.post("/document-conversions", async (c) => {
   const filename = getConvertedFilename(conversion.file.name, conversion.options.output_format);
 
   return downloadResponse({
-    body: response.body,
+    body: converted,
     contentType: getDocumentContentType(conversion.options.output_format),
     filename,
   });

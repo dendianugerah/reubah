@@ -1,6 +1,6 @@
 # Reubah API
 
-TypeScript public API shell for Reubah.
+TypeScript public API for Reubah.
 
 ## Commands
 
@@ -18,7 +18,7 @@ Run on a custom port:
 PORT=17982 bun run api:start
 ```
 
-## Implemented Routes
+## Routes
 
 ```http
 GET /v1/health
@@ -29,31 +29,14 @@ GET /openapi.json
 GET /reference
 ```
 
-## Legacy Bridge
+## Conversion Runtime
 
-The conversion endpoints currently bridge to the existing Go server:
+Image conversions run in the API process through `sharp`, `pdf-lib`, and `bmp-js`.
 
-```http
-POST /v1/image-conversions    -> POST /process
-POST /v1/document-conversions -> POST /process/document
-```
-
-By default, it expects the Go server at:
-
-```text
-http://localhost:8081
-```
-
-Override it with:
+Document conversions run in the API process through LibreOffice. By default the API calls `soffice`; override the executable when needed:
 
 ```bash
-REUBAH_LEGACY_API_URL=http://localhost:8081 bun run api:start
-```
-
-The bridge forwards `X-Request-ID` to the Go server and times out upstream requests after 120 seconds by default. Override the timeout with:
-
-```bash
-REUBAH_LEGACY_API_TIMEOUT_MS=120000 bun run api:start
+REUBAH_LIBREOFFICE_COMMAND=/path/to/soffice bun run api:start
 ```
 
 ## Contract Source

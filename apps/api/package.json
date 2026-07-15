@@ -6,12 +6,14 @@
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
     "test": "bun test",
-    "test:integration": "REUBAH_RUN_BRIDGE_INTEGRATION=1 bun test src/bridge-integration.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@scalar/hono-api-reference": "^0.11.9",
+    "bmp-js": "^0.1.0",
     "hono": "^4.8.5",
+    "pdf-lib": "^1.17.1",
+    "sharp": "^0.35.3",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
   }
