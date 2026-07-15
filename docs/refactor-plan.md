@@ -92,6 +92,7 @@ Use this as the working tracker. Keep commits small and update this list as each
 - [x] Plan initial `@reubah/client` package in `docs/api-client-plan.md`.
 - [x] Validate uploaded input formats before calling the legacy converter.
 - [x] Expand OpenAPI contract tests for conversion response media types and errors.
+- [x] Reject non-multipart conversion requests with `415 Unsupported Media Type`.
 - [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
 
 ### Lower Priority UI

@@ -161,6 +161,59 @@ describe("Reubah API shell", () => {
     });
   });
 
+  test("rejects non-multipart conversion requests", async () => {
+    const app = createApp();
+    let legacyFetchCalled = false;
+
+    globalThis.fetch = (async (input, init) => {
+      void input;
+      void init;
+      legacyFetchCalled = true;
+
+      return new Response("unexpected legacy response", {
+        status: 500,
+      });
+    }) as typeof fetch;
+
+    const response = await app.request("/v1/image-conversions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        output_format: "webp",
+      }),
+    });
+    const problem = await response.json();
+
+    expect(response.status).toBe(415);
+    expect(legacyFetchCalled).toBe(false);
+    expect(problem).toMatchObject({
+      type: "https://docs.reubah.com/errors/unsupported-media-type",
+      title: "Unsupported media type",
+      status: 415,
+      detail: "Conversion requests must use multipart/form-data.",
+    });
+  });
+
+  test("rejects conversion requests without a content type", async () => {
+    const app = createApp();
+
+    const response = await app.request("/v1/document-conversions", {
+      method: "POST",
+      body: "",
+    });
+    const problem = await response.json();
+
+    expect(response.status).toBe(415);
+    expect(problem).toMatchObject({
+      type: "https://docs.reubah.com/errors/unsupported-media-type",
+      title: "Unsupported media type",
+      status: 415,
+      detail: "Conversion requests must use multipart/form-data.",
+    });
+  });
+
   test("rejects unsupported image input formats before calling the legacy API", async () => {
     const app = createApp();
     const body = new FormData();
