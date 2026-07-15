@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { createApp } from "./app";
+import { maxMultipartBodyBytes } from "./http/multipart";
 
 const originalFetch = globalThis.fetch;
 
@@ -99,6 +100,63 @@ describe("Reubah API shell", () => {
       title: "Invalid request",
       status: 400,
       detail: 'Multipart field "file" must contain a file.',
+    });
+  });
+
+  test("rejects oversized multipart requests before parsing the body", async () => {
+    const app = createApp();
+    let legacyFetchCalled = false;
+
+    globalThis.fetch = (async (input, init) => {
+      void input;
+      void init;
+      legacyFetchCalled = true;
+
+      return new Response("unexpected legacy response", {
+        status: 500,
+      });
+    }) as typeof fetch;
+
+    const response = await app.request("/v1/image-conversions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "multipart/form-data; boundary=test",
+        "Content-Length": String(maxMultipartBodyBytes + 1),
+      },
+      body: "",
+    });
+    const problem = await response.json();
+
+    expect(response.status).toBe(413);
+    expect(legacyFetchCalled).toBe(false);
+    expect(response.headers.get("Content-Type")).toContain("application/problem+json");
+    expect(problem).toMatchObject({
+      type: "https://docs.reubah.com/errors/payload-too-large",
+      title: "Payload too large",
+      status: 413,
+      detail: `Multipart body exceeds the ${maxMultipartBodyBytes} byte limit.`,
+    });
+  });
+
+  test("returns problem details for malformed multipart bodies", async () => {
+    const app = createApp();
+
+    const response = await app.request("/v1/image-conversions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "multipart/form-data; boundary=missing",
+      },
+      body: "not-a-valid-multipart-body",
+    });
+    const problem = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(response.headers.get("Content-Type")).toContain("application/problem+json");
+    expect(problem).toMatchObject({
+      type: "https://docs.reubah.com/errors/invalid-request",
+      title: "Invalid request",
+      status: 400,
+      detail: "Request body must be valid multipart/form-data.",
     });
   });
 

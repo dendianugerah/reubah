@@ -8,6 +8,7 @@ import {
   validationFailureFromZod,
 } from "../domain/form";
 import { getConvertedFilename, getDocumentContentType, getImageContentType } from "../domain/media-types";
+import { readMultipartFormData } from "../http/multipart";
 import { problem } from "../http/problem";
 import {
   convertDocumentWithLegacyApi,
@@ -18,7 +19,12 @@ import {
 export const conversionRoutes = new Hono();
 
 conversionRoutes.post("/image-conversions", async (c) => {
-  const formData = await c.req.formData();
+  const formData = await readMultipartFormData(c);
+
+  if (!(formData instanceof FormData)) {
+    return problem(c, formData);
+  }
+
   const file = getRequiredFile(formData, "file");
 
   if (!(file instanceof File)) {
@@ -57,7 +63,12 @@ conversionRoutes.post("/image-conversions", async (c) => {
 });
 
 conversionRoutes.post("/document-conversions", async (c) => {
-  const formData = await c.req.formData();
+  const formData = await readMultipartFormData(c);
+
+  if (!(formData instanceof FormData)) {
+    return problem(c, formData);
+  }
+
   const file = getRequiredFile(formData, "file");
 
   if (!(file instanceof File)) {
