@@ -48,8 +48,66 @@ This gives the product a clean public API boundary, modern docs, shared TypeScri
 - Go routes handle image processing, document conversion, and PDF merge.
 - Document conversion shells out to LibreOffice.
 - Frontend uses Alpine, Tailwind, and plain JavaScript.
-- No public versioned API contract exists yet.
-- No docs site or OpenAPI spec exists yet.
+- TypeScript API shell exists in `apps/api`.
+- Public contract exists in `openapi/v1.yaml`.
+- Local API reference is served at `/reference` from `/openapi.json`.
+- TypeScript API bridges image and document conversions to the existing Go routes.
+- No TanStack web app exists yet.
+- No standalone docs site exists yet.
+
+## Execution Checklist
+
+Use this as the working tracker. Keep commits small and update this list as each slice lands.
+
+### Completed
+
+- [x] Decide first public API scope: health, capabilities, image conversions, document conversions.
+- [x] Defer API keys, accounts, billing, usage tracking, rate limits, async jobs, and multi-image PDF merge.
+- [x] Create API design notes in `docs/api-design.md`.
+- [x] Create OpenAPI contract in `openapi/v1.yaml`.
+- [x] Scaffold Bun workspace and TypeScript API app in `apps/api`.
+- [x] Add `GET /v1/health`.
+- [x] Add `GET /v1/capabilities`.
+- [x] Serve OpenAPI JSON at `GET /openapi.json`.
+- [x] Serve Scalar API reference at `GET /reference`.
+- [x] Add request ID middleware.
+- [x] Add Problem Details style errors.
+- [x] Bridge `POST /v1/image-conversions` to existing Go `POST /process`.
+- [x] Bridge `POST /v1/document-conversions` to existing Go `POST /process/document`.
+- [x] Add API typecheck and test commands.
+- [x] Commit work in logical slices.
+
+### Next
+
+- [ ] Add an end-to-end dev runbook for running Go legacy server plus TypeScript API together.
+- [ ] Add contract consistency tests that compare implemented API responses with `openapi/v1.yaml`.
+- [ ] Add sample fixture files and integration tests for real image/document conversions.
+- [ ] Decide deployment/process model for the bridge phase: two processes, sidecar, or direct worker extraction.
+- [ ] Scaffold `apps/web` with TanStack Router and TanStack Query.
+- [ ] Rebuild image conversion UI against `POST /v1/image-conversions`.
+- [ ] Rebuild document conversion UI against `POST /v1/document-conversions`.
+- [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
+- [ ] Plan initial `@reubah/client` package.
+
+### Deletion Gates
+
+Do not delete old code until the matching gate is complete.
+
+- [ ] Delete old image form/template code only after TanStack image workflow works through `/v1/image-conversions`.
+- [ ] Delete old document form/template code only after TanStack document workflow works through `/v1/document-conversions`.
+- [ ] Delete old batch/PDF merge UI only after deciding whether multi-image PDF belongs in public API v1 or a later workflow.
+- [ ] Delete old Go HTTP routes only after TypeScript API no longer bridges to `POST /process` and `POST /process/document`.
+- [ ] Delete Go conversion internals only after replacement converters have fixture-based quality and performance evidence.
+
+### Deferred
+
+- [ ] API keys.
+- [ ] Rate limiting.
+- [ ] Usage tracking.
+- [ ] Billing/accounts.
+- [ ] Async conversion jobs.
+- [ ] Multi-image PDF public API.
+- [ ] Local conversion npm package such as `@reubah/core`.
 
 ## Target Repository Shape
 
@@ -299,6 +357,8 @@ Exit criteria:
 - Public route names are independent of implementation details.
 - Docs can render an initial API reference from the spec.
 
+Status: complete.
+
 ### Phase 2: TypeScript API Shell
 
 - Create the TypeScript API app.
@@ -317,6 +377,8 @@ Exit criteria:
 - OpenAPI and implementation agree for at least the health endpoint.
 - Errors use the new standard shape.
 
+Status: mostly complete. Remaining work is stronger contract consistency testing and upload-size enforcement before multipart parsing.
+
 ### Phase 3: Bridge Existing Conversion Engine
 
 - Connect TypeScript API endpoints to the current Go conversion code.
@@ -328,6 +390,8 @@ Exit criteria:
 
 - `/v1/image-conversions` and `/v1/document-conversions` work through the new public API.
 - Existing frontend could be replaced without losing conversion functionality.
+
+Status: implemented as a legacy HTTP bridge. Remaining work is fixture-based integration testing against the actual Go server.
 
 ### Phase 4: TanStack Web App
 
@@ -413,16 +477,17 @@ First npm package should be `@reubah/client`, a TypeScript SDK for the HTTP API.
 
 ## Open Decisions
 
-- Hono vs Fastify vs Elysia for the public TypeScript API.
+- Hono is selected for the first TypeScript API shell.
 - TanStack Router SPA vs TanStack Start for the web app.
 - Fumadocs vs Astro/Starlight vs Mintlify for docs.
 - Whether `@reubah/client` is generated from OpenAPI or hand-authored first.
-- Whether conversion workers communicate over HTTP, queue, or local process boundary.
+- Bridge phase currently uses HTTP to existing Go routes.
+- Long-term conversion workers may communicate over HTTP, queue, or direct process boundary.
 - Deployment target and container strategy.
 
 ## Suggested Next Step
 
-Choose the TypeScript API framework and scaffold the API shell. After that, wire `GET /v1/health` and `GET /v1/capabilities` end to end before touching conversion endpoints.
+Add a dev runbook and integration-test path for running the existing Go server plus the TypeScript API together. After that, scaffold `apps/web` and rebuild the image/document workflows against `/v1`.
 
 ## References
 
