@@ -1,16 +1,35 @@
-version: '3.8'
-
 services:
-  reubah:
-    build: .
+  api:
+    build:
+      context: .
+      target: api-runtime
     image: reubah-api:local
-    container_name: reubah
+    container_name: reubah-api
+    init: true
     ports:
-      - "8787:8787"
+      - "${REUBAH_API_PORT:-8788}:8787"
     environment:
+      NODE_ENV: production
       PORT: "8787"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+      REUBAH_LIBREOFFICE_COMMAND: /usr/bin/soffice
+      REUBAH_LIBREOFFICE_TIMEOUT_MS: "${REUBAH_LIBREOFFICE_TIMEOUT_MS:-120000}"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      target: web-runtime
+      args:
+        VITE_REUBAH_API_URL: "${VITE_REUBAH_API_URL:-http://localhost:8788}"
+    image: reubah-web:local
+    container_name: reubah-web
+    init: true
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${REUBAH_WEB_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
     restart: unless-stopped

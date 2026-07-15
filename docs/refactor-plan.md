@@ -21,7 +21,7 @@ OpenAPI spec
 API reference and future docs site
 ```
 
-The old Go server and old server-rendered UI are removed from this refactor. The public API remains the product boundary.
+The public API is the product boundary.
 
 ## Goals
 
@@ -69,9 +69,7 @@ docs/
 - [x] Add direct TypeScript document conversion service.
 - [x] Isolate LibreOffice user profiles per document conversion.
 - [x] Add LibreOffice process timeout handling.
-- [x] Remove old Go converter code.
-- [x] Remove old server-rendered UI templates.
-- [x] Remove temporary compatibility docs and tests.
+- [x] Keep the repository focused on the TypeScript API, web app, and client package.
 - [x] Scaffold `apps/web` with TanStack Router and TanStack Query.
 - [x] Rebuild image conversion UI against `POST /v1/image-conversions`.
 - [x] Scaffold initial `@reubah/client` package for the public HTTP API.
@@ -106,7 +104,7 @@ POST /v1/image-conversions
 POST /v1/document-conversions
 ```
 
-Public routes should not expose implementation names such as `/process`, `/process/document`, or `/v1/images/convert`.
+Public routes should stay resource-oriented and avoid implementation-specific names.
 
 ## Conversion Services
 

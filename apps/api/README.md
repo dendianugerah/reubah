@@ -33,7 +33,7 @@ GET /reference
 
 Image conversions run in the API process through `sharp`, `pdf-lib`, and `bmp-js`.
 
-Document conversions run in the API process through LibreOffice. By default the API calls `soffice`; override the executable when needed:
+Document conversions run in the API process through LibreOffice. By default the API calls `/usr/bin/soffice`; override the executable when needed:
 
 ```bash
 REUBAH_LIBREOFFICE_COMMAND=/path/to/soffice bun run api:start

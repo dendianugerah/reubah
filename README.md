@@ -18,19 +18,31 @@ Reubah is an API-first file conversion project with a Bun + Hono API, a TanStack
 ```bash
 git clone https://github.com/dendianugerah/reubah.git
 cd reubah
-docker-compose up -d
+./scripts/docker-run.sh
+```
+
+Web app:
+
+```text
+http://localhost:3000
 ```
 
 API:
 
 ```text
-http://localhost:8787
+http://localhost:8788
 ```
 
 API reference:
 
 ```text
-http://localhost:8787/reference
+http://localhost:8788/reference
+```
+
+Stop the containers:
+
+```bash
+./scripts/docker-stop.sh
 ```
 
 ### Local Development

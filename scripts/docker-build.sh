@@ -1,2 +1,4 @@
-#!/bin/bash
-docker-compose build 
+#!/usr/bin/env bash
+set -euo pipefail
+
+docker compose build "$@"

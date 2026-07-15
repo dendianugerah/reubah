@@ -1,4 +1,3 @@
-import { spawn } from "node:child_process";
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
@@ -67,9 +66,9 @@ function conversionArgs(inputPath: string, outputDirectory: string, inputFormat:
 }
 
 async function runLibreOffice(args: string[]) {
-  const command = process.env.REUBAH_LIBREOFFICE_COMMAND ?? "soffice";
+  const command = process.env.REUBAH_LIBREOFFICE_COMMAND ?? "/usr/bin/soffice";
   const timeoutMs = getLibreOfficeTimeoutMs();
-  const output = await spawnProcess(command, args, timeoutMs).catch((error: unknown) => {
+  const output = await spawnProcess("/bin/sh", ["-c", 'exec "$0" "$@"', command, ...args], timeoutMs).catch((error: unknown) => {
     if (isMissingCommand(error)) {
       throw new DocumentConverterError(
         503,
@@ -91,6 +90,15 @@ async function runLibreOffice(args: string[]) {
     throw error;
   });
 
+  if (output.exitCode === 126 || output.exitCode === 127) {
+    throw new DocumentConverterError(
+      503,
+      "Converter unavailable",
+      `LibreOffice command "${command}" is not available.`,
+      "converter-unavailable",
+    );
+  }
+
   if (output.exitCode !== 0) {
     throw new DocumentConverterError(
       422,
@@ -103,31 +111,39 @@ async function runLibreOffice(args: string[]) {
 
 function spawnProcess(command: string, args: string[], timeoutMs: number) {
   return new Promise<{ exitCode: number | null; stdout: string; stderr: string }>((resolve, reject) => {
-    const child = spawn(command, args, {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    const stdout: Buffer[] = [];
-    const stderr: Buffer[] = [];
+    let child: Bun.Subprocess<"ignore", "pipe", "pipe">;
+
+    try {
+      child = Bun.spawn([command, ...args], {
+        env: process.env,
+        stdin: "ignore",
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+    } catch (error) {
+      reject(error);
+      return;
+    }
+
     let settled = false;
     const timer = setTimeout(() => {
       child.kill("SIGKILL");
       finish(() => reject(new ProcessTimeoutError(timeoutMs)));
     }, timeoutMs);
 
-    child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
-    child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
-    child.on("error", (error) => {
-      finish(() => reject(error));
-    });
-    child.on("close", (exitCode) => {
-      finish(() => {
-        resolve({
-          exitCode,
-          stdout: Buffer.concat(stdout).toString("utf8"),
-          stderr: Buffer.concat(stderr).toString("utf8"),
+    Promise.all([child.exited, streamToText(child.stdout), streamToText(child.stderr)])
+      .then(([exitCode, stdout, stderr]) => {
+        finish(() => {
+          resolve({
+            exitCode,
+            stdout,
+            stderr,
+          });
         });
+      })
+      .catch((error: unknown) => {
+        finish(() => reject(error));
       });
-    });
 
     function finish(callback: () => void) {
       if (settled) {
@@ -139,6 +155,10 @@ function spawnProcess(command: string, args: string[], timeoutMs: number) {
       callback();
     }
   });
+}
+
+async function streamToText(stream: ReadableStream<Uint8Array>) {
+  return new Response(stream).text();
 }
 
 class ProcessTimeoutError extends Error {

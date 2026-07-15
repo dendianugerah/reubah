@@ -36,16 +36,7 @@ POST /v1/image-conversions
 POST /v1/document-conversions
 ```
 
-Avoid these shapes for the public API:
-
-```http
-POST /process
-POST /process/document
-POST /v1/images/convert
-POST /v1/convert-document
-```
-
-The old names are implementation or action names. The new names represent resources being created:
+The names represent resources being created:
 
 - `image-conversions`: a conversion result from an uploaded image.
 - `document-conversions`: a conversion result from an uploaded document.
@@ -117,7 +108,7 @@ resize_mode       fit, fill, stretch
 optimize          true or false
 ```
 
-Do not expose old field names such as `image`, `document`, or `format` in the new public API.
+Do not expose implementation-specific field names in the public API.
 
 ## Error Format
 

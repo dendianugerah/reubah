@@ -1,2 +1,4 @@
-#!/bin/bash
-docker-compose down 
+#!/usr/bin/env bash
+set -euo pipefail
+
+docker compose down "$@"
