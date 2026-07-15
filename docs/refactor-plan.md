@@ -79,7 +79,7 @@ Use this as the working tracker. Keep commits small and update this list as each
 
 ### Next
 
-- [ ] Add an end-to-end dev runbook for running Go legacy server plus TypeScript API together.
+- [x] Add an end-to-end dev runbook for running Go legacy server plus TypeScript API together.
 - [ ] Add contract consistency tests that compare implemented API responses with `openapi/v1.yaml`.
 - [ ] Add sample fixture files and integration tests for real image/document conversions.
 - [ ] Decide deployment/process model for the bridge phase: two processes, sidecar, or direct worker extraction.
