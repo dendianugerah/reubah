@@ -1,0 +1,13 @@
+export const SERVICE_NAME = "reubah-api";
+export const SERVICE_VERSION = process.env.REUBAH_API_VERSION ?? "1.0.0";
+
+export function getPort() {
+  const value = process.env.PORT ?? "8787";
+  const port = Number(value);
+
+  if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+    throw new Error(`Invalid PORT value: ${value}`);
+  }
+
+  return port;
+}

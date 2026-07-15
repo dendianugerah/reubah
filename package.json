@@ -1,0 +1,19 @@
+{
+  "name": "reubah",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "api:dev": "bun run --cwd apps/api dev",
+    "api:start": "bun run --cwd apps/api start",
+    "api:test": "bun run --cwd apps/api test",
+    "api:typecheck": "bun run --cwd apps/api typecheck"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.19",
+    "typescript": "^5.8.3"
+  }
+}
