@@ -1,5 +1,6 @@
-import { LEGACY_API_URL } from "../config";
+import { LEGACY_API_TIMEOUT_MS, LEGACY_API_URL } from "../config";
 import type { DocumentConversionOptions, ImageConversionOptions } from "../domain/form";
+import { requestIdHeader } from "../http/request-id";
 
 export class LegacyConverterError extends Error {
   constructor(
@@ -12,7 +13,16 @@ export class LegacyConverterError extends Error {
   }
 }
 
-export async function convertImageWithLegacyApi(file: File, options: ImageConversionOptions) {
+type LegacyConversionRequest = {
+  requestId: string;
+  timeoutMs?: number;
+};
+
+export async function convertImageWithLegacyApi(
+  file: File,
+  options: ImageConversionOptions,
+  request: LegacyConversionRequest,
+) {
   const body = new FormData();
 
   body.set("image", file, file.name);
@@ -38,21 +48,7 @@ export async function convertImageWithLegacyApi(file: File, options: ImageConver
     body.set("optimize", "true");
   }
 
-  let response: Response;
-
-  try {
-    response = await fetch(`${LEGACY_API_URL}/process`, {
-      method: "POST",
-      body,
-    });
-  } catch {
-    throw new LegacyConverterError(
-      503,
-      "Converter unavailable",
-      "The image converter service is unavailable.",
-      "converter-unavailable",
-    );
-  }
+  const response = await fetchLegacyApi("/process", body, request, "The image converter service is unavailable.");
 
   if (!response.ok) {
     throw await legacyErrorFromResponse(response, "Image conversion failed.");
@@ -61,33 +57,63 @@ export async function convertImageWithLegacyApi(file: File, options: ImageConver
   return response;
 }
 
-export async function convertDocumentWithLegacyApi(file: File, options: DocumentConversionOptions) {
+export async function convertDocumentWithLegacyApi(
+  file: File,
+  options: DocumentConversionOptions,
+  request: LegacyConversionRequest,
+) {
   const body = new FormData();
 
   body.set("document", file, file.name);
   body.set("format", options.output_format);
 
-  let response: Response;
-
-  try {
-    response = await fetch(`${LEGACY_API_URL}/process/document`, {
-      method: "POST",
-      body,
-    });
-  } catch {
-    throw new LegacyConverterError(
-      503,
-      "Converter unavailable",
-      "The document converter service is unavailable.",
-      "converter-unavailable",
-    );
-  }
+  const response = await fetchLegacyApi(
+    "/process/document",
+    body,
+    request,
+    "The document converter service is unavailable.",
+  );
 
   if (!response.ok) {
     throw await legacyErrorFromResponse(response, "Document conversion failed.");
   }
 
   return response;
+}
+
+async function fetchLegacyApi(
+  path: string,
+  body: FormData,
+  request: LegacyConversionRequest,
+  unavailableDetail: string,
+) {
+  const timeoutMs = request.timeoutMs ?? LEGACY_API_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(`${LEGACY_API_URL}${path}`, {
+      method: "POST",
+      body,
+      headers: {
+        [requestIdHeader]: request.requestId,
+      },
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw new LegacyConverterError(
+        504,
+        "Converter timeout",
+        `The converter did not respond within ${timeoutMs} ms.`,
+        "converter-timeout",
+      );
+    }
+
+    throw new LegacyConverterError(503, "Converter unavailable", unavailableDetail, "converter-unavailable");
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function legacyErrorFromResponse(response: Response, defaultDetail: string) {
@@ -107,8 +133,12 @@ async function legacyErrorFromResponse(response: Response, defaultDetail: string
   return new LegacyConverterError(status, titleForStatus(status), detail, typeForStatus(status));
 }
 
+function isAbortError(error: unknown) {
+  return typeof error === "object" && error !== null && "name" in error && error.name === "AbortError";
+}
+
 function normalizeStatus(status: number) {
-  if ([400, 413, 415, 422, 500, 503].includes(status)) {
+  if ([400, 413, 415, 422, 500, 503, 504].includes(status)) {
     return status;
   }
 
@@ -131,6 +161,8 @@ function titleForStatus(status: number) {
       return "Conversion failed";
     case 503:
       return "Converter unavailable";
+    case 504:
+      return "Converter timeout";
     default:
       return "Upstream conversion error";
   }
@@ -148,6 +180,8 @@ function typeForStatus(status: number) {
       return "conversion-failed";
     case 503:
       return "converter-unavailable";
+    case 504:
+      return "converter-timeout";
     default:
       return "upstream-conversion-error";
   }

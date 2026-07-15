@@ -55,6 +55,18 @@ Default:
 http://localhost:8081
 ```
 
+The upstream conversion timeout is controlled by:
+
+```text
+REUBAH_LEGACY_API_TIMEOUT_MS
+```
+
+Default:
+
+```text
+120000
+```
+
 ## Contract Boundary
 
 Public request fields:

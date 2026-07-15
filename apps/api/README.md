@@ -50,6 +50,12 @@ Override it with:
 REUBAH_LEGACY_API_URL=http://localhost:8081 bun run api:start
 ```
 
+The bridge forwards `X-Request-ID` to the Go server and times out upstream requests after 120 seconds by default. Override the timeout with:
+
+```bash
+REUBAH_LEGACY_API_TIMEOUT_MS=120000 bun run api:start
+```
+
 ## Contract Source
 
 The canonical OpenAPI contract is:

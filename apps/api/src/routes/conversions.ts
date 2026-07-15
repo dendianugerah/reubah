@@ -16,7 +16,13 @@ import {
   LegacyConverterError,
 } from "../services/legacy-converter";
 
-export const conversionRoutes = new Hono();
+type ApiEnv = {
+  Variables: {
+    requestId: string;
+  };
+};
+
+export const conversionRoutes = new Hono<ApiEnv>();
 
 conversionRoutes.post("/image-conversions", async (c) => {
   const formData = await readMultipartFormData(c);
@@ -42,7 +48,9 @@ conversionRoutes.post("/image-conversions", async (c) => {
   let response: Response;
 
   try {
-    response = await convertImageWithLegacyApi(file, options.data);
+    response = await convertImageWithLegacyApi(file, options.data, {
+      requestId: c.get("requestId"),
+    });
   } catch (error) {
     if (error instanceof LegacyConverterError) {
       return problem(c, error);
@@ -84,7 +92,9 @@ conversionRoutes.post("/document-conversions", async (c) => {
   let response: Response;
 
   try {
-    response = await convertDocumentWithLegacyApi(file, options.data);
+    response = await convertDocumentWithLegacyApi(file, options.data, {
+      requestId: c.get("requestId"),
+    });
   } catch (error) {
     if (error instanceof LegacyConverterError) {
       return problem(c, error);

@@ -87,7 +87,7 @@ Use this as the working tracker. Keep commits small and update this list as each
 - [x] Rebuild image conversion UI against `POST /v1/image-conversions`.
 - [x] Harden API upload handling before multipart parsing.
 - [x] Normalize malformed multipart requests into Problem Details errors.
-- [ ] Add upstream converter timeout and request ID forwarding.
+- [x] Add upstream converter timeout and request ID forwarding.
 - [ ] Split API conversion handlers into smaller request parsing and response mapping units.
 - [ ] Plan initial `@reubah/client` package.
 - [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.

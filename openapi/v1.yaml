@@ -123,6 +123,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /v1/document-conversions:
     post:
       tags:
@@ -185,6 +187,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
 components:
   headers:
     RequestID:
@@ -245,6 +249,15 @@ components:
             $ref: "#/components/schemas/Problem"
     ServiceUnavailable:
       description: Required conversion dependency is unavailable.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    GatewayTimeout:
+      description: Required conversion dependency did not respond before the timeout.
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestID"

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 
 import { createApp } from "./app";
 import { maxMultipartBodyBytes } from "./http/multipart";
+import { requestIdHeader } from "./http/request-id";
 
 const originalFetch = globalThis.fetch;
 
@@ -174,6 +175,7 @@ describe("Reubah API shell", () => {
       expect(input).toBe("http://localhost:8081/process");
       expect(init?.method).toBe("POST");
       expect(init?.body).toBeInstanceOf(FormData);
+      expect(new Headers(init?.headers).get(requestIdHeader)).toBe("req_image_bridge");
 
       const upstreamBody = init?.body as FormData;
       expect(upstreamBody.get("image")).toBeInstanceOf(File);
@@ -193,6 +195,9 @@ describe("Reubah API shell", () => {
 
     const response = await app.request("/v1/image-conversions", {
       method: "POST",
+      headers: {
+        [requestIdHeader]: "req_image_bridge",
+      },
       body: requestBody,
     });
 
@@ -232,6 +237,7 @@ describe("Reubah API shell", () => {
       expect(input).toBe("http://localhost:8081/process/document");
       expect(init?.method).toBe("POST");
       expect(init?.body).toBeInstanceOf(FormData);
+      expect(new Headers(init?.headers).get(requestIdHeader)).toBe("req_document_bridge");
 
       const upstreamBody = init?.body as FormData;
       expect(upstreamBody.get("document")).toBeInstanceOf(File);
@@ -247,6 +253,9 @@ describe("Reubah API shell", () => {
 
     const response = await app.request("/v1/document-conversions", {
       method: "POST",
+      headers: {
+        [requestIdHeader]: "req_document_bridge",
+      },
       body: requestBody,
     });
 

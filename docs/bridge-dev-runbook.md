@@ -66,6 +66,12 @@ If the legacy server is not on `8081`, override the bridge target:
 REUBAH_LEGACY_API_URL=http://localhost:8081 bun run api:dev
 ```
 
+The API forwards `X-Request-ID` to the legacy server and waits up to 120 seconds for each upstream conversion. Override the timeout when testing slow local converters:
+
+```bash
+REUBAH_LEGACY_API_TIMEOUT_MS=180000 bun run api:dev
+```
+
 If the API port is occupied:
 
 ```bash
