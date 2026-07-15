@@ -7,13 +7,17 @@
     "packages/*"
   ],
   "scripts": {
-    "check": "bun run api:typecheck && bun run api:test",
+    "check": "bun run api:typecheck && bun run api:test && bun run web:typecheck",
     "api:dev": "bun run --cwd apps/api dev",
     "api:start": "bun run --cwd apps/api start",
     "api:test": "bun run --cwd apps/api test",
     "api:test:integration": "bun run --cwd apps/api test:integration",
     "api:typecheck": "bun run --cwd apps/api typecheck",
-    "legacy:dev": "go run cmd/server/main.go"
+    "legacy:dev": "go run cmd/server/main.go",
+    "web:build": "bun run --cwd apps/web build",
+    "web:dev": "bun run --cwd apps/web dev",
+    "web:preview": "bun run --cwd apps/web preview",
+    "web:typecheck": "bun run --cwd apps/web typecheck"
   },
   "devDependencies": {
     "@types/bun": "^1.2.19",

@@ -2,6 +2,8 @@ templates/node_modules/
 node_modules/
 apps/*/node_modules/
 packages/*/node_modules/
+apps/*/dist/
+packages/*/dist/
 
 static/css/*.css
 static/js/*.js
