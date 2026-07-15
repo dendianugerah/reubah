@@ -306,4 +306,82 @@ describe("Reubah API shell", () => {
     expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="report.txt"');
     expect(await response.text()).toBe("document-bytes");
   });
+
+  test("returns problem details when LibreOffice is unavailable", async () => {
+    const app = createApp();
+    const requestBody = new FormData();
+    const previousCommand = process.env.REUBAH_LIBREOFFICE_COMMAND;
+
+    process.env.REUBAH_LIBREOFFICE_COMMAND = "reubah-missing-soffice";
+    requestBody.set(
+      "file",
+      new File(["document-bytes"], "report.docx", {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      }),
+    );
+    requestBody.set("output_format", "pdf");
+
+    try {
+      const response = await app.request("/v1/document-conversions", {
+        method: "POST",
+        body: requestBody,
+      });
+      const problem = await response.json();
+
+      expect(response.status).toBe(503);
+      expect(problem).toMatchObject({
+        type: "https://docs.reubah.com/errors/converter-unavailable",
+        title: "Converter unavailable",
+        status: 503,
+        detail: 'LibreOffice command "reubah-missing-soffice" is not available.',
+      });
+    } finally {
+      restoreEnv("REUBAH_LIBREOFFICE_COMMAND", previousCommand);
+    }
+  });
+
+  test("returns problem details when LibreOffice conversion times out", async () => {
+    const app = createApp();
+    const requestBody = new FormData();
+    const previousCommand = process.env.REUBAH_LIBREOFFICE_COMMAND;
+    const previousTimeout = process.env.REUBAH_LIBREOFFICE_TIMEOUT_MS;
+
+    process.env.REUBAH_LIBREOFFICE_COMMAND = new URL("../test-fixtures/slow-soffice", import.meta.url).pathname;
+    process.env.REUBAH_LIBREOFFICE_TIMEOUT_MS = "10";
+    requestBody.set(
+      "file",
+      new File(["document-bytes"], "report.docx", {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      }),
+    );
+    requestBody.set("output_format", "pdf");
+
+    try {
+      const response = await app.request("/v1/document-conversions", {
+        method: "POST",
+        body: requestBody,
+      });
+      const problem = await response.json();
+
+      expect(response.status).toBe(504);
+      expect(problem).toMatchObject({
+        type: "https://docs.reubah.com/errors/converter-timeout",
+        title: "Conversion timed out",
+        status: 504,
+        detail: "LibreOffice conversion exceeded 10ms.",
+      });
+    } finally {
+      restoreEnv("REUBAH_LIBREOFFICE_COMMAND", previousCommand);
+      restoreEnv("REUBAH_LIBREOFFICE_TIMEOUT_MS", previousTimeout);
+    }
+  });
 });
+
+function restoreEnv(name: string, value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[name];
+    return;
+  }
+
+  process.env[name] = value;
+}

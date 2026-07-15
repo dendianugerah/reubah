@@ -66,6 +66,7 @@ docs/
 - [x] Validate uploaded input formats before converting.
 - [x] Add direct TypeScript image conversion service.
 - [x] Add direct TypeScript document conversion service.
+- [x] Add LibreOffice process timeout handling.
 - [x] Remove old Go converter code.
 - [x] Remove old server-rendered UI templates.
 - [x] Remove temporary compatibility docs and tests.
@@ -125,3 +126,4 @@ Public routes should not expose implementation names such as `/process`, `/proce
 - Cleans temporary files after each request.
 - Returns `503 converter-unavailable` when LibreOffice is missing.
 - Returns `422 conversion-failed` when LibreOffice cannot convert a valid request.
+- Returns `504 converter-timeout` when LibreOffice exceeds `REUBAH_LIBREOFFICE_TIMEOUT_MS`.

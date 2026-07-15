@@ -3,6 +3,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
 
+import { getLibreOfficeTimeoutMs } from "../config";
 import type { DocumentConversionOptions } from "../domain/form";
 
 export class DocumentConverterError extends Error {
@@ -60,13 +61,23 @@ function conversionArgs(inputPath: string, outputDirectory: string, inputFormat:
 
 async function runLibreOffice(args: string[]) {
   const command = process.env.REUBAH_LIBREOFFICE_COMMAND ?? "soffice";
-  const output = await spawnProcess(command, args).catch((error: unknown) => {
+  const timeoutMs = getLibreOfficeTimeoutMs();
+  const output = await spawnProcess(command, args, timeoutMs).catch((error: unknown) => {
     if (isMissingCommand(error)) {
       throw new DocumentConverterError(
         503,
         "Converter unavailable",
         `LibreOffice command "${command}" is not available.`,
         "converter-unavailable",
+      );
+    }
+
+    if (error instanceof ProcessTimeoutError) {
+      throw new DocumentConverterError(
+        504,
+        "Conversion timed out",
+        `LibreOffice conversion exceeded ${timeoutMs}ms.`,
+        "converter-timeout",
       );
     }
 
@@ -83,25 +94,50 @@ async function runLibreOffice(args: string[]) {
   }
 }
 
-function spawnProcess(command: string, args: string[]) {
+function spawnProcess(command: string, args: string[], timeoutMs: number) {
   return new Promise<{ exitCode: number | null; stdout: string; stderr: string }>((resolve, reject) => {
     const child = spawn(command, args, {
       stdio: ["ignore", "pipe", "pipe"],
     });
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
+    let settled = false;
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      finish(() => reject(new ProcessTimeoutError(timeoutMs)));
+    }, timeoutMs);
 
     child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
     child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
-    child.on("error", reject);
+    child.on("error", (error) => {
+      finish(() => reject(error));
+    });
     child.on("close", (exitCode) => {
-      resolve({
-        exitCode,
-        stdout: Buffer.concat(stdout).toString("utf8"),
-        stderr: Buffer.concat(stderr).toString("utf8"),
+      finish(() => {
+        resolve({
+          exitCode,
+          stdout: Buffer.concat(stdout).toString("utf8"),
+          stderr: Buffer.concat(stderr).toString("utf8"),
+        });
       });
     });
+
+    function finish(callback: () => void) {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timer);
+      callback();
+    }
   });
+}
+
+class ProcessTimeoutError extends Error {
+  constructor(public readonly timeoutMs: number) {
+    super(`Process exceeded ${timeoutMs}ms.`);
+  }
 }
 
 async function findConvertedFile(directory: string, outputFormat: string) {

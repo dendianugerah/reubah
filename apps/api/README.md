@@ -39,6 +39,12 @@ Document conversions run in the API process through LibreOffice. By default the 
 REUBAH_LIBREOFFICE_COMMAND=/path/to/soffice bun run api:start
 ```
 
+LibreOffice conversions time out after 120 seconds by default. Override that with:
+
+```bash
+REUBAH_LIBREOFFICE_TIMEOUT_MS=180000 bun run api:start
+```
+
 ## Contract Source
 
 The canonical OpenAPI contract is:
