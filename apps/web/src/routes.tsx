@@ -7,8 +7,9 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
-import { Download, FileImage, Loader2, Upload } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Download, FileImage, Loader2, Upload, UploadCloud, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useDropzone, type FileRejection } from "react-dropzone";
 
 import { ApiError, apiBaseUrl, createImageConversion, getCapabilities, getHealth } from "./api/client";
 
@@ -76,10 +77,10 @@ function Dashboard() {
     <main className="workspace">
       <section className="panel intro-panel">
         <div>
-          <p className="eyebrow">Image workflow</p>
-          <h1>File conversion workspace</h1>
+          <p className="eyebrow">Self-hosted converter</p>
+          <h1>Reubah</h1>
           <p className="muted">
-            Convert images through the public TypeScript API with the conversion service kept behind the API boundary.
+            A quiet workspace for converting images and documents through your own API runtime.
           </p>
         </div>
         <ApiStatus loading={health.isLoading} error={health.error} service={health.data?.service} version={health.data?.version} />
@@ -130,6 +131,7 @@ function ImageConversionPanel({
   const [height, setHeight] = useState("");
   const [optimize, setOptimize] = useState(false);
   const [result, setResult] = useState<ImageConversionResult | null>(null);
+  const [dropError, setDropError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -138,14 +140,6 @@ function ImageConversionPanel({
       }
     };
   }, [result]);
-
-  const fileSummary = useMemo(() => {
-    if (!file) {
-      return "PNG, JPG, WebP, GIF, BMP, HEIC";
-    }
-
-    return `${file.name} (${formatBytes(file.size)})`;
-  }, [file]);
 
   const conversion = useMutation({
     mutationFn: async () => {
@@ -179,6 +173,34 @@ function ImageConversionPanel({
     },
   });
 
+  const dropzone = useDropzone({
+    accept: {
+      "image/*": [],
+      "image/heic": [".heic"],
+      "image/heif": [".heif"],
+    },
+    disabled: conversion.isPending,
+    maxFiles: 1,
+    multiple: false,
+    onDropAccepted: ([acceptedFile]) => {
+      if (!acceptedFile) {
+        return;
+      }
+
+      setFile(acceptedFile);
+      setResult(null);
+      setDropError(null);
+      conversion.reset();
+    },
+    onDropRejected: (rejections: FileRejection[]) => {
+      const reason = rejections[0]?.errors[0]?.message;
+      setDropError(reason ?? "Drop one supported image file.");
+      setFile(null);
+      setResult(null);
+      conversion.reset();
+    },
+  });
+
   const errorMessage =
     conversion.error instanceof ApiError
       ? conversion.error.message
@@ -190,8 +212,8 @@ function ImageConversionPanel({
     <section className="panel conversion-panel">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Convert image</p>
-          <h2>Single image conversion</h2>
+          <p className="eyebrow">Convert</p>
+          <h2>Image</h2>
         </div>
         <span className="api-pill">POST /v1/image-conversions</span>
       </div>
@@ -203,24 +225,49 @@ function ImageConversionPanel({
           conversion.mutate();
         }}
       >
-        <label className="upload-zone">
-          <input
-            type="file"
-            accept="image/*,.heic,.heif"
-            onChange={(event) => {
-              setFile(event.currentTarget.files?.[0] ?? null);
-              setResult(null);
-              conversion.reset();
-            }}
-          />
-          <FileImage size={24} aria-hidden="true" />
-          <span>{fileSummary}</span>
-        </label>
+        <div
+          {...dropzone.getRootProps({
+            className: [
+              "upload-zone",
+              dropzone.isDragActive ? "upload-zone-active" : "",
+              dropzone.isDragReject || dropError ? "upload-zone-error" : "",
+              file ? "upload-zone-filled" : "",
+            ]
+              .filter(Boolean)
+              .join(" "),
+          })}
+        >
+          <input {...dropzone.getInputProps()} />
+          <div className="upload-icon" aria-hidden="true">
+            {file ? <FileImage size={20} /> : <UploadCloud size={21} />}
+          </div>
+          <div className="upload-copy">
+            <p>{dropzone.isDragActive ? "Drop image to load it" : file ? file.name : "Drop image here"}</p>
+            <span>{file ? formatBytes(file.size) : "PNG, JPG, WebP, GIF, BMP, HEIC"}</span>
+          </div>
+          {file ? (
+            <button
+              className="icon-button"
+              type="button"
+              aria-label="Remove selected file"
+              onClick={(event) => {
+                event.stopPropagation();
+                setFile(null);
+                setResult(null);
+                setDropError(null);
+                conversion.reset();
+              }}
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+        {dropError ? <p className="error-text">{dropError}</p> : null}
 
         <div className="control-grid">
           <Field label="Output">
             <select value={outputFormat} onChange={(event) => setOutputFormat(event.target.value)}>
-              {(imageCapabilities?.output_formats ?? ["webp", "jpeg", "png", "pdf"]).map((format) => (
+              {(imageCapabilities?.output_formats ?? ["webp", "jpeg", "png"]).map((format) => (
                 <option key={format} value={format}>
                   {format}
                 </option>
@@ -303,7 +350,7 @@ type ApiStatusProps = {
 
 function ApiStatus({ loading, error, service, version }: ApiStatusProps) {
   if (loading) {
-    return <div className="status-card">Checking API</div>;
+    return <div className="status-card">Checking runtime</div>;
   }
 
   if (error) {
