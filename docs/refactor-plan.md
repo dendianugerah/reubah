@@ -30,7 +30,7 @@ The public API is the product boundary.
 - Keep route names stable and resource-oriented.
 - Use OpenAPI as the source of truth for public API behavior.
 - Keep conversion code separated from HTTP routing.
-- Defer API keys, accounts, billing, usage tracking, rate limits, async jobs, and npm local conversion packages.
+- Defer API keys, accounts, billing, usage tracking, rate limits, async jobs, and external packages.
 
 ## Current Repository Shape
 
@@ -38,13 +38,10 @@ The public API is the product boundary.
 apps/
   api/                  # Bun + Hono public API
   web/                  # TanStack Router + TanStack Query web app
-packages/
-  client/               # TypeScript client for the public API
 openapi/
   v1.yaml               # Public API contract
 docs/
   api-design.md
-  api-client-plan.md
   refactor-plan.md
 ```
 
@@ -69,12 +66,10 @@ docs/
 - [x] Add direct TypeScript document conversion service.
 - [x] Isolate LibreOffice user profiles per document conversion.
 - [x] Add LibreOffice process timeout handling.
-- [x] Keep the repository focused on the TypeScript API, web app, and client package.
+- [x] Keep the repository focused on the TypeScript API and web app.
 - [x] Scaffold `apps/web` with TanStack Router and TanStack Query.
 - [x] Rebuild image conversion UI against `POST /v1/image-conversions`.
-- [x] Scaffold initial `@reubah/client` package for the public HTTP API.
-- [x] Make the TanStack web app consume `@reubah/client`.
-- [x] Validate client format constants against `openapi/v1.yaml`.
+- [x] Keep the web app on direct HTTP calls to the self-hosted API.
 - [x] Add API typecheck and test commands.
 - [x] Commit work in logical slices.
 
@@ -83,7 +78,6 @@ docs/
 - [ ] Rebuild document conversion UI against `POST /v1/document-conversions`.
 - [ ] Add focused fixture checks for real document conversions in an environment with LibreOffice.
 - [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
-- [ ] Publish `@reubah/client` when the public API shape is stable.
 
 ## Deferred
 
@@ -93,7 +87,8 @@ docs/
 - [ ] Billing/accounts.
 - [ ] Async conversion jobs.
 - [ ] Multi-image PDF public API.
-- [ ] Local conversion npm package such as `@reubah/core`.
+- [ ] External API/client packages.
+- [ ] Local conversion packages.
 
 ## API V1
 

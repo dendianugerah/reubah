@@ -24,7 +24,6 @@
     "apps/web": {
       "name": "@reubah/web",
       "dependencies": {
-        "@reubah/client": "workspace:*",
         "@tanstack/react-query": "^5.101.2",
         "@tanstack/react-router": "^1.170.18",
         "lucide-react": "^1.24.0",
@@ -36,13 +35,6 @@
         "@types/react-dom": "^19.2.3",
         "@vitejs/plugin-react": "^6.0.3",
         "vite": "^8.1.4",
-      },
-    },
-    "packages/client": {
-      "name": "@reubah/client",
-      "version": "0.0.0",
-      "devDependencies": {
-        "yaml": "^2.9.0",
       },
     },
   },
@@ -116,8 +108,6 @@
     "@pdf-lib/upng": ["@pdf-lib/upng@1.0.1", "", { "dependencies": { "pako": "^1.0.10" } }, "sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ=="],
 
     "@reubah/api": ["@reubah/api@workspace:apps/api"],
-
-    "@reubah/client": ["@reubah/client@workspace:packages/client"],
 
     "@reubah/web": ["@reubah/web@workspace:apps/web"],
 

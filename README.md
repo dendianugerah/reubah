@@ -6,7 +6,6 @@ Reubah is an API-first file conversion project with a Bun + Hono API, a TanStack
 
 - Public REST API for image and document conversion
 - Scalar API reference served from the OpenAPI contract
-- TypeScript client package for the public API
 - TanStack Router and TanStack Query web app
 - Direct image conversion with `sharp`, `pdf-lib`, and `bmp-js`
 - Direct document conversion through LibreOffice
@@ -103,7 +102,6 @@ bun run check
 bun run api:test
 bun run api:typecheck
 bun run web:typecheck
-bun run client:test
 ```
 
 ## Notes

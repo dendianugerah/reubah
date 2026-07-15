@@ -5,13 +5,11 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
-COPY packages/client/package.json packages/client/package.json
 
 RUN bun install --frozen-lockfile
 
 FROM build-deps AS web-build
 
-COPY packages/client packages/client
 COPY apps/web apps/web
 
 ARG VITE_REUBAH_API_URL=http://localhost:8788
@@ -26,7 +24,6 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
-COPY packages/client/package.json packages/client/package.json
 
 RUN bun install --frozen-lockfile --production
 

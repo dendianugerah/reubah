@@ -53,7 +53,7 @@ Returns supported formats, option enums, and limits. The web app should use this
 
 ### `GET /openapi.json`
 
-Returns the canonical `openapi/v1.yaml` contract as JSON. This is useful for docs, SDK generation, contract tests, and API clients.
+Returns the canonical `openapi/v1.yaml` contract as JSON. This is useful for docs, contract tests, and example requests.
 
 ### `GET /reference`
 
@@ -165,30 +165,11 @@ The API should still be designed so auth can be added later without breaking rou
 Authorization: Bearer rb_live_xxx
 ```
 
-## NPM Package Direction
+## Package Direction
 
-First npm package should be a client SDK for the public API:
+No external package is part of the current self-hosted scope.
 
-```ts
-import { Reubah } from "@reubah/client"
-
-const reubah = new Reubah({ baseUrl: "https://api.reubah.com" })
-
-const result = await reubah.imageConversions.create(file, {
-  outputFormat: "webp",
-  quality: "high",
-})
-```
-
-This SDK should wrap the HTTP API. It should not be the initial conversion engine.
-
-A local conversion package can be evaluated later:
-
-```ts
-import { convertImage } from "@reubah/core"
-```
-
-That package has different constraints because users would need local native dependencies for some conversions.
+External API/client packages or local conversion packages can be evaluated later after the self-hosted API and web app are stable.
 
 ## OpenAPI Source Of Truth
 
@@ -202,9 +183,7 @@ The OpenAPI file should power:
 
 - API reference docs.
 - Contract tests.
-- TypeScript client generation.
 - Example requests in docs.
-- Future SDKs.
 
 ## Separation Of Concerns
 
@@ -238,6 +217,5 @@ Docs app:
 - Guides
 - Examples
 - API reference
-- SDK documentation
 
 Do not let the web app or docs app depend on converter internals.
