@@ -44,15 +44,15 @@ This gives the product a clean public API boundary, modern docs, shared TypeScri
 
 ## Current State
 
-- Go server serves HTML templates and static assets.
-- Go routes handle image processing, document conversion, and PDF merge.
+- Go legacy server exposes private conversion routes for image processing, document conversion, and PDF merge.
+- Old Go HTML templates and static assets remain in the repo but are no longer served by the Go converter process.
 - Document conversion shells out to LibreOffice.
-- Frontend uses Alpine, Tailwind, and plain JavaScript.
 - TypeScript API shell exists in `apps/api`.
 - Public contract exists in `openapi/v1.yaml`.
 - Local API reference is served at `/reference` from `/openapi.json`.
 - TypeScript API bridges image and document conversions to the existing Go routes.
-- No TanStack web app exists yet.
+- TanStack web app exists in `apps/web` and consumes `@reubah/client`.
+- Initial `@reubah/client` package exists in `packages/client`.
 - No standalone docs site exists yet.
 
 ## Execution Checklist
@@ -96,6 +96,7 @@ Use this as the working tracker. Keep commits small and update this list as each
 - [x] Expand OpenAPI contract tests for request schemas, limits, and Problem Details.
 - [x] Scaffold initial `@reubah/client` package for the public HTTP API.
 - [x] Make the TanStack web app consume `@reubah/client` instead of a duplicate API wrapper.
+- [x] Stop the Go legacy converter from serving old templates and static assets.
 - [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
 
 ### Lower Priority UI

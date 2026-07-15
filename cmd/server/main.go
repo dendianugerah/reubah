@@ -73,14 +73,7 @@ func setupRouter() *mux.Router {
 	r.Use(securityHeadersMiddleware)
 	r.Use(recoveryMiddleware)
 
-	// Serve static files with caching
-	fileServer := http.FileServer(http.Dir("static"))
-	r.PathPrefix("/static/").Handler(
-		http.StripPrefix("/static/", fileServer),
-	)
-
-	// Routes
-	r.HandleFunc("/", handlers.ShowUploadForm).Methods("GET")
+	// Private converter routes used by the TypeScript API bridge.
 	r.HandleFunc("/process", handlers.ProcessImage).Methods("POST")
 	r.HandleFunc("/process/merge-pdf", handlers.MergePDF).Methods("POST")
 	r.HandleFunc("/process/document", handlers.ConvertDocument).Methods("POST")
