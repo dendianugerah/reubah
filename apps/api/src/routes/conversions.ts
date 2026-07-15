@@ -1,13 +1,11 @@
 import { Hono } from "hono";
 
 import {
-  documentConversionOptionsSchema,
-  getRequiredFile,
-  getStringFields,
-  imageConversionOptionsSchema,
-  validationFailureFromZod,
-} from "../domain/form";
+  parseDocumentConversionRequest,
+  parseImageConversionRequest,
+} from "../domain/conversion-requests";
 import { getConvertedFilename, getDocumentContentType, getImageContentType } from "../domain/media-types";
+import { downloadResponse } from "../http/download";
 import { readMultipartFormData } from "../http/multipart";
 import { problem } from "../http/problem";
 import {
@@ -31,24 +29,16 @@ conversionRoutes.post("/image-conversions", async (c) => {
     return problem(c, formData);
   }
 
-  const file = getRequiredFile(formData, "file");
+  const conversion = parseImageConversionRequest(formData);
 
-  if (!(file instanceof File)) {
-    return problem(c, file);
-  }
-
-  const options = imageConversionOptionsSchema.safeParse(
-    getStringFields(formData, ["output_format", "quality", "width", "height", "resize_mode", "optimize"]),
-  );
-
-  if (!options.success) {
-    return problem(c, validationFailureFromZod(options.error));
+  if ("status" in conversion) {
+    return problem(c, conversion);
   }
 
   let response: Response;
 
   try {
-    response = await convertImageWithLegacyApi(file, options.data, {
+    response = await convertImageWithLegacyApi(conversion.file, conversion.options, {
       requestId: c.get("requestId"),
     });
   } catch (error) {
@@ -59,14 +49,12 @@ conversionRoutes.post("/image-conversions", async (c) => {
     throw error;
   }
 
-  const filename = getConvertedFilename(file.name, options.data.output_format);
+  const filename = getConvertedFilename(conversion.file.name, conversion.options.output_format);
 
-  return new Response(response.body, {
-    status: 200,
-    headers: {
-      "Content-Type": getImageContentType(options.data.output_format),
-      "Content-Disposition": `attachment; filename="${filename}"`,
-    },
+  return downloadResponse({
+    body: response.body,
+    contentType: getImageContentType(conversion.options.output_format),
+    filename,
   });
 });
 
@@ -77,22 +65,16 @@ conversionRoutes.post("/document-conversions", async (c) => {
     return problem(c, formData);
   }
 
-  const file = getRequiredFile(formData, "file");
+  const conversion = parseDocumentConversionRequest(formData);
 
-  if (!(file instanceof File)) {
-    return problem(c, file);
-  }
-
-  const options = documentConversionOptionsSchema.safeParse(getStringFields(formData, ["output_format"]));
-
-  if (!options.success) {
-    return problem(c, validationFailureFromZod(options.error));
+  if ("status" in conversion) {
+    return problem(c, conversion);
   }
 
   let response: Response;
 
   try {
-    response = await convertDocumentWithLegacyApi(file, options.data, {
+    response = await convertDocumentWithLegacyApi(conversion.file, conversion.options, {
       requestId: c.get("requestId"),
     });
   } catch (error) {
@@ -103,13 +85,11 @@ conversionRoutes.post("/document-conversions", async (c) => {
     throw error;
   }
 
-  const filename = getConvertedFilename(file.name, options.data.output_format);
+  const filename = getConvertedFilename(conversion.file.name, conversion.options.output_format);
 
-  return new Response(response.body, {
-    status: 200,
-    headers: {
-      "Content-Type": getDocumentContentType(options.data.output_format),
-      "Content-Disposition": `attachment; filename="${filename}"`,
-    },
+  return downloadResponse({
+    body: response.body,
+    contentType: getDocumentContentType(conversion.options.output_format),
+    filename,
   });
 });
