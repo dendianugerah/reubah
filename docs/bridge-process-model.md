@@ -40,6 +40,7 @@ Go converter container/process on private network
 ```
 
 Only the TypeScript API should be exposed publicly in the bridge phase. The Go converter should be private.
+The Go converter exposes only health and conversion routes; it no longer serves the old template UI.
 
 ## Configuration
 
@@ -91,6 +92,17 @@ resizeMode
 ```
 
 The TypeScript API owns translation between the two.
+
+## Legacy Converter Routes
+
+```http
+GET  /health
+POST /process
+POST /process/document
+POST /process/merge-pdf
+```
+
+The Docker healthcheck uses `GET /health`.
 
 ## Deletion Gates
 

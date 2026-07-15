@@ -46,6 +46,17 @@ The legacy server defaults to:
 http://localhost:8081
 ```
 
+It is a private converter service in the bridge phase. It exposes:
+
+```http
+GET  /health
+POST /process
+POST /process/document
+POST /process/merge-pdf
+```
+
+It does not serve the product UI or static assets.
+
 ## Start The TypeScript API
 
 Terminal 2:
@@ -84,6 +95,12 @@ Health:
 
 ```bash
 curl -i http://localhost:8787/v1/health
+```
+
+Legacy converter health:
+
+```bash
+curl -i http://localhost:8081/health
 ```
 
 Capabilities:

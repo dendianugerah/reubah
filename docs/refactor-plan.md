@@ -97,6 +97,7 @@ Use this as the working tracker. Keep commits small and update this list as each
 - [x] Scaffold initial `@reubah/client` package for the public HTTP API.
 - [x] Make the TanStack web app consume `@reubah/client` instead of a duplicate API wrapper.
 - [x] Stop the Go legacy converter from serving old templates and static assets.
+- [x] Add legacy converter health route and align Dockerfile with conversion-only runtime.
 - [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
 
 ### Lower Priority UI

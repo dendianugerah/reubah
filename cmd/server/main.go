@@ -74,11 +74,18 @@ func setupRouter() *mux.Router {
 	r.Use(recoveryMiddleware)
 
 	// Private converter routes used by the TypeScript API bridge.
+	r.HandleFunc("/health", legacyHealth).Methods("GET")
 	r.HandleFunc("/process", handlers.ProcessImage).Methods("POST")
 	r.HandleFunc("/process/merge-pdf", handlers.MergePDF).Methods("POST")
 	r.HandleFunc("/process/document", handlers.ConvertDocument).Methods("POST")
 
 	return r
+}
+
+func legacyHealth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"status":"ok","service":"reubah-legacy-converter"}`))
 }
 
 // Middleware functions

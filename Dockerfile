@@ -10,8 +10,6 @@ RUN apk add --no-cache \
     pkgconfig \
     libwebp-dev \
     musl-dev \
-    nodejs \
-    npm \
     libheif-dev \
     x265-dev \
     libde265-dev \
@@ -23,11 +21,6 @@ RUN go mod download
 
 # Copy application code and build
 COPY . ./
-WORKDIR /app/templates
-RUN npm install && npm run build
-
-# Go back to app directory and build the application
-WORKDIR /app
 RUN CGO_ENABLED=1 go build -o reubah ./cmd/server
 
 # Runtime stage
@@ -50,10 +43,8 @@ RUN apk add --no-cache \
 # Create directories for LibreOffice
 RUN mkdir -p /tmp/.cache /tmp/.config /tmp/.local
 
-# Copy binary and static files
+# Copy binary
 COPY --from=builder /app/reubah /app/reubah
-COPY --from=builder /app/templates ./templates
-COPY --from=builder /app/static ./static
 
 # Create non-root user
 RUN addgroup -g 1000 appgroup && \
@@ -69,6 +60,6 @@ EXPOSE 8081
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost:8081/ || exit 1
+  CMD curl -f http://localhost:8081/health || exit 1
 
 CMD ["/app/reubah"]
