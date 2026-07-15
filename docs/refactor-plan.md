@@ -85,9 +85,17 @@ Use this as the working tracker. Keep commits small and update this list as each
 - [x] Decide deployment/process model for the bridge phase: two processes, sidecar, or direct worker extraction.
 - [x] Scaffold `apps/web` with TanStack Router and TanStack Query.
 - [x] Rebuild image conversion UI against `POST /v1/image-conversions`.
-- [ ] Rebuild document conversion UI against `POST /v1/document-conversions`.
-- [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
+- [ ] Harden API upload handling before multipart parsing.
+- [ ] Add upstream converter timeout and request ID forwarding.
+- [ ] Normalize malformed multipart requests into Problem Details errors.
+- [ ] Split API conversion handlers into smaller request parsing and response mapping units.
 - [ ] Plan initial `@reubah/client` package.
+- [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
+
+### Lower Priority UI
+
+- [ ] Rebuild document conversion UI against `POST /v1/document-conversions`.
+- [ ] Keep additional UI work minimal until the API contract and bridge behavior are solid.
 
 ### Deletion Gates
 
