@@ -34,6 +34,10 @@
         "vite": "^8.1.4",
       },
     },
+    "packages/client": {
+      "name": "@reubah/client",
+      "version": "0.0.0",
+    },
   },
   "packages": {
     "@emnapi/core": ["@emnapi/core@1.11.1", "", { "dependencies": { "@emnapi/wasi-threads": "1.2.2", "tslib": "^2.4.0" } }, "sha512-RSvbQmHzdKzNsLYa/wHrbc3KN4sYLKAdPZxqiM2HATqv/SBk2/ENSHpvXGaLOMcsAyz0poEGqkmmKYG3OWiJEQ=="],
@@ -47,6 +51,8 @@
     "@oxc-project/types": ["@oxc-project/types@0.139.0", "", {}, "sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw=="],
 
     "@reubah/api": ["@reubah/api@workspace:apps/api"],
+
+    "@reubah/client": ["@reubah/client@workspace:packages/client"],
 
     "@reubah/web": ["@reubah/web@workspace:apps/web"],
 
