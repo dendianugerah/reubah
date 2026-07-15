@@ -91,6 +91,7 @@ Use this as the working tracker. Keep commits small and update this list as each
 - [x] Split API conversion handlers into smaller request parsing and response mapping units.
 - [x] Plan initial `@reubah/client` package in `docs/api-client-plan.md`.
 - [x] Validate uploaded input formats before calling the legacy converter.
+- [x] Expand OpenAPI contract tests for conversion response media types and errors.
 - [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
 
 ### Lower Priority UI
