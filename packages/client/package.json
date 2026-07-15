@@ -17,5 +17,8 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.0"
   }
 }

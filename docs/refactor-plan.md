@@ -73,6 +73,7 @@ docs/
 - [x] Rebuild image conversion UI against `POST /v1/image-conversions`.
 - [x] Scaffold initial `@reubah/client` package for the public HTTP API.
 - [x] Make the TanStack web app consume `@reubah/client`.
+- [x] Validate client format constants against `openapi/v1.yaml`.
 - [x] Add API typecheck and test commands.
 - [x] Commit work in logical slices.
 
@@ -81,7 +82,6 @@ docs/
 - [ ] Rebuild document conversion UI against `POST /v1/document-conversions`.
 - [ ] Add focused fixture checks for real document conversions in an environment with LibreOffice.
 - [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
-- [ ] Add generated or validated client types from `openapi/v1.yaml`.
 - [ ] Publish `@reubah/client` when the public API shape is stable.
 
 ## Deferred

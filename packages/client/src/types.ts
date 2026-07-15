@@ -1,8 +1,10 @@
-export type ImageInputFormat = "jpg" | "jpeg" | "png" | "webp" | "gif" | "bmp" | "heic" | "heif";
-export type ImageOutputFormat = ImageInputFormat | "pdf";
-export type DocumentFormat = "pdf" | "doc" | "docx" | "odt" | "rtf" | "txt";
-export type ResizeMode = "fit" | "fill" | "stretch";
-export type QualityPreset = "low" | "medium" | "high" | "lossless";
+import type {
+  DocumentFormat,
+  ImageInputFormat,
+  ImageOutputFormat,
+  QualityPreset,
+  ResizeMode,
+} from "./formats";
 
 export type ReubahClientOptions = {
   baseUrl?: string;

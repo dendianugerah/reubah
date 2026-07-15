@@ -1,16 +1,25 @@
 export { createReubahClient } from "./client";
 export { ReubahApiError, ReubahNetworkError } from "./errors";
+export {
+  documentFormats,
+  imageInputFormats,
+  imageOutputFormats,
+  qualityPresets,
+  resizeModes,
+} from "./formats";
+export type {
+  DocumentFormat,
+  ImageInputFormat,
+  ImageOutputFormat,
+  QualityPreset,
+  ResizeMode,
+} from "./formats";
 export type {
   Capabilities,
   ConversionResult,
   DocumentConversionInput,
-  DocumentFormat,
   Health,
   ImageConversionInput,
-  ImageInputFormat,
-  ImageOutputFormat,
   ProblemDetails,
-  QualityPreset,
-  ResizeMode,
   ReubahClientOptions,
 } from "./types";
