@@ -84,7 +84,7 @@ Use this as the working tracker. Keep commits small and update this list as each
 - [x] Add sample fixture files and integration tests for real image/document conversions.
 - [x] Decide deployment/process model for the bridge phase: two processes, sidecar, or direct worker extraction.
 - [x] Scaffold `apps/web` with TanStack Router and TanStack Query.
-- [ ] Rebuild image conversion UI against `POST /v1/image-conversions`.
+- [x] Rebuild image conversion UI against `POST /v1/image-conversions`.
 - [ ] Rebuild document conversion UI against `POST /v1/document-conversions`.
 - [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
 - [ ] Plan initial `@reubah/client` package.

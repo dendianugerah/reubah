@@ -6,9 +6,11 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
+import { Download, FileImage, Loader2, Upload } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-import { apiBaseUrl, getCapabilities, getHealth } from "./api/client";
+import { ApiError, apiBaseUrl, createImageConversion, getCapabilities, getHealth } from "./api/client";
 
 const queryClient = new QueryClient();
 
@@ -74,14 +76,16 @@ function Dashboard() {
     <main className="workspace">
       <section className="panel intro-panel">
         <div>
-          <p className="eyebrow">Bridge preview</p>
+          <p className="eyebrow">Image workflow</p>
           <h1>File conversion workspace</h1>
           <p className="muted">
-            The new web app is wired to the public TypeScript API. Image and document workflows will be rebuilt here next.
+            Convert images through the public TypeScript API while the conversion engine remains isolated behind the bridge.
           </p>
         </div>
         <ApiStatus loading={health.isLoading} error={health.error} service={health.data?.service} version={health.data?.version} />
       </section>
+
+      <ImageConversionPanel capabilities={capabilities.data} loadingCapabilities={capabilities.isLoading} />
 
       <section className="grid">
         <CapabilityPanel
@@ -100,6 +104,193 @@ function Dashboard() {
         />
       </section>
     </main>
+  );
+}
+
+type ImageConversionResult = {
+  url: string;
+  filename: string;
+  contentType: string;
+  size: number;
+};
+
+function ImageConversionPanel({
+  capabilities,
+  loadingCapabilities,
+}: {
+  capabilities?: Awaited<ReturnType<typeof getCapabilities>>;
+  loadingCapabilities: boolean;
+}) {
+  const imageCapabilities = capabilities?.image_conversions;
+  const [file, setFile] = useState<File | null>(null);
+  const [outputFormat, setOutputFormat] = useState("webp");
+  const [quality, setQuality] = useState("high");
+  const [resizeMode, setResizeMode] = useState("fit");
+  const [width, setWidth] = useState("");
+  const [height, setHeight] = useState("");
+  const [optimize, setOptimize] = useState(false);
+  const [result, setResult] = useState<ImageConversionResult | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (result) {
+        URL.revokeObjectURL(result.url);
+      }
+    };
+  }, [result]);
+
+  const fileSummary = useMemo(() => {
+    if (!file) {
+      return "PNG, JPG, WebP, GIF, BMP, HEIC";
+    }
+
+    return `${file.name} (${formatBytes(file.size)})`;
+  }, [file]);
+
+  const conversion = useMutation({
+    mutationFn: async () => {
+      if (!file) {
+        throw new Error("Choose an image file first.");
+      }
+
+      return createImageConversion({
+        file,
+        outputFormat,
+        quality,
+        width,
+        height,
+        resizeMode,
+        optimize,
+      });
+    },
+    onSuccess: (converted) => {
+      setResult((previous) => {
+        if (previous) {
+          URL.revokeObjectURL(previous.url);
+        }
+
+        return {
+          url: URL.createObjectURL(converted.blob),
+          filename: converted.filename,
+          contentType: converted.contentType,
+          size: converted.blob.size,
+        };
+      });
+    },
+  });
+
+  const errorMessage =
+    conversion.error instanceof ApiError
+      ? conversion.error.message
+      : conversion.error instanceof Error
+        ? conversion.error.message
+        : null;
+
+  return (
+    <section className="panel conversion-panel">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">Convert image</p>
+          <h2>Single image conversion</h2>
+        </div>
+        <span className="api-pill">POST /v1/image-conversions</span>
+      </div>
+
+      <form
+        className="conversion-layout"
+        onSubmit={(event) => {
+          event.preventDefault();
+          conversion.mutate();
+        }}
+      >
+        <label className="upload-zone">
+          <input
+            type="file"
+            accept="image/*,.heic,.heif"
+            onChange={(event) => {
+              setFile(event.currentTarget.files?.[0] ?? null);
+              setResult(null);
+              conversion.reset();
+            }}
+          />
+          <FileImage size={24} aria-hidden="true" />
+          <span>{fileSummary}</span>
+        </label>
+
+        <div className="control-grid">
+          <Field label="Output">
+            <select value={outputFormat} onChange={(event) => setOutputFormat(event.target.value)}>
+              {(imageCapabilities?.output_formats ?? ["webp", "jpeg", "png", "pdf"]).map((format) => (
+                <option key={format} value={format}>
+                  {format}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Quality">
+            <select value={quality} onChange={(event) => setQuality(event.target.value)}>
+              {(imageCapabilities?.quality_presets ?? ["low", "medium", "high", "lossless"]).map((preset) => (
+                <option key={preset} value={preset}>
+                  {preset}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Width">
+            <input inputMode="numeric" min="1" placeholder="Auto" type="number" value={width} onChange={(event) => setWidth(event.target.value)} />
+          </Field>
+          <Field label="Height">
+            <input inputMode="numeric" min="1" placeholder="Auto" type="number" value={height} onChange={(event) => setHeight(event.target.value)} />
+          </Field>
+          <Field label="Resize">
+            <select value={resizeMode} onChange={(event) => setResizeMode(event.target.value)}>
+              {(imageCapabilities?.resize_modes ?? ["fit", "fill", "stretch"]).map((mode) => (
+                <option key={mode} value={mode}>
+                  {mode}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <label className="checkbox-field">
+            <input checked={optimize} type="checkbox" onChange={(event) => setOptimize(event.target.checked)} />
+            <span>Optimize output</span>
+          </label>
+        </div>
+
+        <div className="actions-row">
+          <button className="primary-button" type="submit" disabled={conversion.isPending || loadingCapabilities}>
+            {conversion.isPending ? <Loader2 className="spin" size={18} aria-hidden="true" /> : <Upload size={18} aria-hidden="true" />}
+            <span>{conversion.isPending ? "Converting" : "Convert"}</span>
+          </button>
+          {errorMessage ? <p className="error-text">{errorMessage}</p> : null}
+        </div>
+      </form>
+
+      {result ? (
+        <div className="result-row">
+          <div>
+            <p className="list-label">Result</p>
+            <p className="result-name">{result.filename}</p>
+            <p className="muted result-meta">
+              {result.contentType} / {formatBytes(result.size)}
+            </p>
+          </div>
+          <a className="secondary-button" href={result.url} download={result.filename}>
+            <Download size={18} aria-hidden="true" />
+            <span>Download</span>
+          </a>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      {children}
+    </label>
   );
 }
 
@@ -167,4 +358,16 @@ function FormatList({ label, formats }: { label: string; formats: string[] }) {
       </div>
     </div>
   );
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
