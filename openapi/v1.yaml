@@ -1,0 +1,460 @@
+openapi: 3.1.0
+info:
+  title: Reubah API
+  version: 1.0.0
+  summary: Public API for file conversion and image processing.
+  description: |
+    Reubah provides synchronous file conversion endpoints for images and documents.
+    This first public contract is unauthenticated by design;
+    API keys and usage limits are deferred until a later product phase.
+servers:
+  - url: http://localhost:8081
+    description: Local development
+  - url: https://api.reubah.com
+    description: Production
+tags:
+  - name: System
+    description: Runtime and service metadata.
+  - name: Capabilities
+    description: Supported formats, options, and limits.
+  - name: Image Conversions
+    description: Image conversion and processing endpoints.
+  - name: Document Conversions
+    description: Office/document conversion endpoints.
+paths:
+  /v1/health:
+    get:
+      tags:
+        - System
+      operationId: getHealth
+      summary: Check API health
+      responses:
+        "200":
+          description: API is healthy.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+              examples:
+                healthy:
+                  value:
+                    status: ok
+                    service: reubah-api
+                    version: 1.0.0
+  /v1/capabilities:
+    get:
+      tags:
+        - Capabilities
+      operationId: getCapabilities
+      summary: Get supported conversion capabilities
+      description: Returns supported formats, option values, and upload limits.
+      responses:
+        "200":
+          description: Supported formats and limits.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Capabilities"
+  /v1/image-conversions:
+    post:
+      tags:
+        - Image Conversions
+      operationId: createImageConversion
+      summary: Convert an image
+      description: Converts one uploaded image and returns the converted file directly.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateImageConversionRequest"
+      responses:
+        "200":
+          description: Converted image or PDF file.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+            Content-Disposition:
+              $ref: "#/components/headers/ContentDisposition"
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+            image/bmp:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /v1/document-conversions:
+    post:
+      tags:
+        - Document Conversions
+      operationId: createDocumentConversion
+      summary: Convert a document
+      description: Converts one uploaded document and returns the converted file directly.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateDocumentConversionRequest"
+      responses:
+        "200":
+          description: Converted document file.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+            Content-Disposition:
+              $ref: "#/components/headers/ContentDisposition"
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/msword:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+            application/vnd.oasis.opendocument.text:
+              schema:
+                type: string
+                format: binary
+            application/rtf:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+components:
+  headers:
+    RequestID:
+      description: Unique request identifier for support and debugging.
+      schema:
+        type: string
+      example: req_01hzz4f6j7e3z9t8f7a6b5c4d3
+    ContentDisposition:
+      description: Suggested download filename.
+      schema:
+        type: string
+      example: attachment; filename="converted.webp"
+  responses:
+    BadRequest:
+      description: Request is malformed or contains invalid options.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    PayloadTooLarge:
+      description: Uploaded file exceeds the maximum allowed size.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    UnsupportedMediaType:
+      description: Uploaded file media type is not supported.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    UnprocessableEntity:
+      description: Conversion failed for a valid request.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    InternalServerError:
+      description: Unexpected server error.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ServiceUnavailable:
+      description: Required conversion dependency is unavailable.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    Health:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - service
+        - version
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+        service:
+          type: string
+          example: reubah-api
+        version:
+          type: string
+          example: 1.0.0
+    Capabilities:
+      type: object
+      additionalProperties: false
+      required:
+        - limits
+        - image_conversions
+        - document_conversions
+      properties:
+        limits:
+          $ref: "#/components/schemas/Limits"
+        image_conversions:
+          type: object
+          additionalProperties: false
+          required:
+            - input_formats
+            - output_formats
+            - resize_modes
+            - quality_presets
+          properties:
+            input_formats:
+              type: array
+              items:
+                $ref: "#/components/schemas/ImageInputFormat"
+            output_formats:
+              type: array
+              items:
+                $ref: "#/components/schemas/ImageOutputFormat"
+            resize_modes:
+              type: array
+              items:
+                $ref: "#/components/schemas/ResizeMode"
+            quality_presets:
+              type: array
+              items:
+                $ref: "#/components/schemas/QualityPreset"
+        document_conversions:
+          type: object
+          additionalProperties: false
+          required:
+            - input_formats
+            - output_formats
+          properties:
+            input_formats:
+              type: array
+              items:
+                $ref: "#/components/schemas/DocumentFormat"
+            output_formats:
+              type: array
+              items:
+                $ref: "#/components/schemas/DocumentFormat"
+    Limits:
+      type: object
+      additionalProperties: false
+      required:
+        - max_upload_bytes
+        - max_image_width
+        - max_image_height
+      properties:
+        max_upload_bytes:
+          type: integer
+          format: int64
+          example: 33554432
+        max_image_width:
+          type: integer
+          example: 8192
+        max_image_height:
+          type: integer
+          example: 8192
+    CreateImageConversionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - file
+        - output_format
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Image file to convert.
+        output_format:
+          $ref: "#/components/schemas/ImageOutputFormat"
+        quality:
+          $ref: "#/components/schemas/QualityPreset"
+        width:
+          type: integer
+          minimum: 1
+          maximum: 8192
+          description: Target width in pixels.
+        height:
+          type: integer
+          minimum: 1
+          maximum: 8192
+          description: Target height in pixels.
+        resize_mode:
+          $ref: "#/components/schemas/ResizeMode"
+        optimize:
+          type: boolean
+          default: false
+          description: Optimize the output image when supported.
+    CreateDocumentConversionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - file
+        - output_format
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Document file to convert.
+        output_format:
+          $ref: "#/components/schemas/DocumentFormat"
+    Problem:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - request_id
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://docs.reubah.com/errors/unsupported-format
+        title:
+          type: string
+          example: Unsupported format
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+          example: 400
+        detail:
+          type: string
+          example: Conversion from docx to heic is not supported.
+        request_id:
+          type: string
+          example: req_01hzz4f6j7e3z9t8f7a6b5c4d3
+    ImageInputFormat:
+      type: string
+      enum:
+        - jpg
+        - jpeg
+        - png
+        - webp
+        - gif
+        - bmp
+        - heic
+        - heif
+    ImageOutputFormat:
+      type: string
+      enum:
+        - jpg
+        - jpeg
+        - png
+        - webp
+        - gif
+        - bmp
+        - heic
+        - heif
+        - pdf
+    DocumentFormat:
+      type: string
+      enum:
+        - pdf
+        - doc
+        - docx
+        - odt
+        - rtf
+        - txt
+    ResizeMode:
+      type: string
+      enum:
+        - fit
+        - fill
+        - stretch
+      default: fit
+    QualityPreset:
+      type: string
+      enum:
+        - low
+        - medium
+        - high
+        - lossless
+      default: high
