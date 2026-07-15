@@ -1,14 +1,19 @@
 import { Hono } from "hono";
 
 import {
+  documentConversionOptionsSchema,
   getRequiredFile,
   getStringFields,
   imageConversionOptionsSchema,
   validationFailureFromZod,
 } from "../domain/form";
-import { getConvertedFilename, getImageContentType } from "../domain/media-types";
+import { getConvertedFilename, getDocumentContentType, getImageContentType } from "../domain/media-types";
 import { problem } from "../http/problem";
-import { convertImageWithLegacyApi, LegacyConverterError } from "../services/legacy-converter";
+import {
+  convertDocumentWithLegacyApi,
+  convertImageWithLegacyApi,
+  LegacyConverterError,
+} from "../services/legacy-converter";
 
 export const conversionRoutes = new Hono();
 
@@ -51,11 +56,39 @@ conversionRoutes.post("/image-conversions", async (c) => {
   });
 });
 
-conversionRoutes.post("/document-conversions", (c) => {
-  return problem(c, {
-    type: "not-implemented",
-    title: "Not implemented",
-    status: 501,
-    detail: "Document conversion is not implemented in the TypeScript API shell yet.",
+conversionRoutes.post("/document-conversions", async (c) => {
+  const formData = await c.req.formData();
+  const file = getRequiredFile(formData, "file");
+
+  if (!(file instanceof File)) {
+    return problem(c, file);
+  }
+
+  const options = documentConversionOptionsSchema.safeParse(getStringFields(formData, ["output_format"]));
+
+  if (!options.success) {
+    return problem(c, validationFailureFromZod(options.error));
+  }
+
+  let response: Response;
+
+  try {
+    response = await convertDocumentWithLegacyApi(file, options.data);
+  } catch (error) {
+    if (error instanceof LegacyConverterError) {
+      return problem(c, error);
+    }
+
+    throw error;
+  }
+
+  const filename = getConvertedFilename(file.name, options.data.output_format);
+
+  return new Response(response.body, {
+    status: 200,
+    headers: {
+      "Content-Type": getDocumentContentType(options.data.output_format),
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
   });
 });

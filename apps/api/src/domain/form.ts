@@ -5,6 +5,7 @@ import { capabilities } from "./capabilities";
 const imageOutputFormats = capabilities.image_conversions.output_formats;
 const qualityPresets = capabilities.image_conversions.quality_presets;
 const resizeModes = capabilities.image_conversions.resize_modes;
+const documentFormats = capabilities.document_conversions.output_formats;
 
 export const imageConversionOptionsSchema = z.object({
   output_format: z.enum(imageOutputFormats),
@@ -19,6 +20,12 @@ export const imageConversionOptionsSchema = z.object({
 });
 
 export type ImageConversionOptions = z.infer<typeof imageConversionOptionsSchema>;
+
+export const documentConversionOptionsSchema = z.object({
+  output_format: z.enum(documentFormats),
+});
+
+export type DocumentConversionOptions = z.infer<typeof documentConversionOptionsSchema>;
 
 export type ValidationFailure = {
   title: string;

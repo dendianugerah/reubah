@@ -143,4 +143,58 @@ describe("Reubah API shell", () => {
     expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="photo.webp"');
     expect(await response.text()).toBe("converted-image");
   });
+
+  test("validates document conversion multipart requests", async () => {
+    const app = createApp();
+    const body = new FormData();
+    body.set("output_format", "pdf");
+
+    const response = await app.request("/v1/document-conversions", {
+      method: "POST",
+      body,
+    });
+    const problem = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(problem).toMatchObject({
+      type: "https://docs.reubah.com/errors/invalid-request",
+      title: "Invalid request",
+      status: 400,
+      detail: 'Multipart field "file" must contain a file.',
+    });
+  });
+
+  test("bridges document conversion requests to the legacy Go API", async () => {
+    const app = createApp();
+    const requestBody = new FormData();
+    requestBody.set("file", new File(["document-bytes"], "report.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }));
+    requestBody.set("output_format", "pdf");
+
+    globalThis.fetch = (async (input, init) => {
+      expect(input).toBe("http://localhost:8081/process/document");
+      expect(init?.method).toBe("POST");
+      expect(init?.body).toBeInstanceOf(FormData);
+
+      const upstreamBody = init?.body as FormData;
+      expect(upstreamBody.get("document")).toBeInstanceOf(File);
+      expect(upstreamBody.get("format")).toBe("pdf");
+
+      return new Response("converted-document", {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+        },
+      });
+    }) as typeof fetch;
+
+    const response = await app.request("/v1/document-conversions", {
+      method: "POST",
+      body: requestBody,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("application/pdf");
+    expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="report.pdf"');
+    expect(await response.text()).toBe("converted-document");
+  });
 });

@@ -24,19 +24,19 @@ PORT=17982 bun run api:start
 GET /v1/health
 GET /v1/capabilities
 POST /v1/image-conversions
+POST /v1/document-conversions
 GET /openapi.json
 GET /reference
 ```
 
-The document conversion endpoint is reserved in `openapi/v1.yaml` and will be wired to the conversion layer next:
-
-```http
-POST /v1/document-conversions
-```
-
 ## Legacy Bridge
 
-`POST /v1/image-conversions` currently bridges to the existing Go `/process` endpoint.
+The conversion endpoints currently bridge to the existing Go server:
+
+```http
+POST /v1/image-conversions    -> POST /process
+POST /v1/document-conversions -> POST /process/document
+```
 
 By default, it expects the Go server at:
 

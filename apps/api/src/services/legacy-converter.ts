@@ -1,5 +1,5 @@
 import { LEGACY_API_URL } from "../config";
-import type { ImageConversionOptions } from "../domain/form";
+import type { DocumentConversionOptions, ImageConversionOptions } from "../domain/form";
 
 export class LegacyConverterError extends Error {
   constructor(
@@ -55,15 +55,44 @@ export async function convertImageWithLegacyApi(file: File, options: ImageConver
   }
 
   if (!response.ok) {
-    throw await legacyErrorFromResponse(response);
+    throw await legacyErrorFromResponse(response, "Image conversion failed.");
   }
 
   return response;
 }
 
-async function legacyErrorFromResponse(response: Response) {
+export async function convertDocumentWithLegacyApi(file: File, options: DocumentConversionOptions) {
+  const body = new FormData();
+
+  body.set("document", file, file.name);
+  body.set("format", options.output_format);
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${LEGACY_API_URL}/process/document`, {
+      method: "POST",
+      body,
+    });
+  } catch {
+    throw new LegacyConverterError(
+      503,
+      "Converter unavailable",
+      "The document converter service is unavailable.",
+      "converter-unavailable",
+    );
+  }
+
+  if (!response.ok) {
+    throw await legacyErrorFromResponse(response, "Document conversion failed.");
+  }
+
+  return response;
+}
+
+async function legacyErrorFromResponse(response: Response, defaultDetail: string) {
   const status = normalizeStatus(response.status);
-  let detail = "Image conversion failed.";
+  let detail = defaultDetail;
 
   try {
     const body = await response.json();
