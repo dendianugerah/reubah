@@ -64,6 +64,7 @@ docs/
 - [x] Add upload size guarding before multipart parsing.
 - [x] Normalize malformed multipart requests into Problem Details errors.
 - [x] Validate uploaded input formats before converting.
+- [x] Sanitize download filenames in `Content-Disposition`.
 - [x] Add direct TypeScript image conversion service.
 - [x] Add direct TypeScript document conversion service.
 - [x] Add LibreOffice process timeout handling.

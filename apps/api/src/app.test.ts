@@ -239,7 +239,9 @@ describe("Reubah API shell", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("image/webp");
-    expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="photo.webp"');
+    expect(response.headers.get("Content-Disposition")).toBe(
+      'attachment; filename="photo.webp"; filename*=UTF-8\'\'photo.webp',
+    );
     expect((await response.arrayBuffer()).byteLength).toBeGreaterThan(0);
   });
 
@@ -303,7 +305,9 @@ describe("Reubah API shell", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("text/plain");
-    expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="report.txt"');
+    expect(response.headers.get("Content-Disposition")).toBe(
+      'attachment; filename="report.txt"; filename*=UTF-8\'\'report.txt',
+    );
     expect(await response.text()).toBe("document-bytes");
   });
 

@@ -208,7 +208,7 @@ components:
       description: Suggested download filename.
       schema:
         type: string
-      example: attachment; filename="converted.webp"
+      example: attachment; filename="converted.webp"; filename*=UTF-8''converted.webp
   responses:
     BadRequest:
       description: Request is malformed or contains invalid options.
