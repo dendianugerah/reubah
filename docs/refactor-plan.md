@@ -93,6 +93,7 @@ Use this as the working tracker. Keep commits small and update this list as each
 - [x] Validate uploaded input formats before calling the legacy converter.
 - [x] Expand OpenAPI contract tests for conversion response media types and errors.
 - [x] Reject non-multipart conversion requests with `415 Unsupported Media Type`.
+- [x] Expand OpenAPI contract tests for request schemas, limits, and Problem Details.
 - [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
 
 ### Lower Priority UI

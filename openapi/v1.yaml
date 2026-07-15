@@ -388,8 +388,11 @@ components:
         resize_mode:
           $ref: "#/components/schemas/ResizeMode"
         optimize:
-          type: boolean
-          default: false
+          type: string
+          enum:
+            - "true"
+            - "false"
+          default: "false"
           description: Optimize the output image when supported.
     CreateDocumentConversionRequest:
       type: object

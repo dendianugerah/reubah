@@ -6,6 +6,19 @@ import { getDocumentContentType, getImageContentType } from "./domain/media-type
 
 const openApiPath = new URL("../../../openapi/v1.yaml", import.meta.url);
 
+type OpenApiSchema = {
+  type?: string;
+  format?: string;
+  enum?: string[];
+  required?: string[];
+  properties?: Record<string, OpenApiSchema>;
+  minimum?: number;
+  maximum?: number;
+  default?: unknown;
+  example?: unknown;
+  $ref?: string;
+};
+
 type OpenApiDocument = {
   paths: Record<
     string,
@@ -21,7 +34,7 @@ type OpenApiDocument = {
     }
   >;
   components: {
-    schemas: Record<string, { enum?: string[] }>;
+    schemas: Record<string, OpenApiSchema>;
   };
 };
 
@@ -64,6 +77,70 @@ describe("OpenAPI contract alignment", () => {
     expect(document.components.schemas.DocumentFormat.enum).toEqual([
       ...capabilities.document_conversions.output_formats,
     ]);
+  });
+
+  test("keeps limits aligned with OpenAPI schemas", async () => {
+    const document = await readOpenApiDocument();
+    const limits = document.components.schemas.Limits.properties ?? {};
+    const imageRequest = document.components.schemas.CreateImageConversionRequest.properties ?? {};
+
+    expect(limits.max_upload_bytes?.example).toBe(capabilities.limits.max_upload_bytes);
+    expect(limits.max_image_width?.example).toBe(capabilities.limits.max_image_width);
+    expect(limits.max_image_height?.example).toBe(capabilities.limits.max_image_height);
+    expect(imageRequest.width?.maximum).toBe(capabilities.limits.max_image_width);
+    expect(imageRequest.height?.maximum).toBe(capabilities.limits.max_image_height);
+  });
+
+  test("documents conversion request schemas", async () => {
+    const document = await readOpenApiDocument();
+    const imageRequest = document.components.schemas.CreateImageConversionRequest;
+    const documentRequest = document.components.schemas.CreateDocumentConversionRequest;
+
+    expect(imageRequest.required).toEqual(["file", "output_format"]);
+    expect(Object.keys(imageRequest.properties ?? {})).toEqual([
+      "file",
+      "output_format",
+      "quality",
+      "width",
+      "height",
+      "resize_mode",
+      "optimize",
+    ]);
+    expect(imageRequest.properties?.file).toMatchObject({
+      type: "string",
+      format: "binary",
+    });
+    expect(imageRequest.properties?.optimize).toMatchObject({
+      type: "string",
+      enum: ["true", "false"],
+      default: "false",
+    });
+
+    expect(documentRequest.required).toEqual(["file", "output_format"]);
+    expect(Object.keys(documentRequest.properties ?? {})).toEqual(["file", "output_format"]);
+    expect(documentRequest.properties?.file).toMatchObject({
+      type: "string",
+      format: "binary",
+    });
+  });
+
+  test("documents the Problem Details schema returned by the API", async () => {
+    const document = await readOpenApiDocument();
+    const problem = document.components.schemas.Problem;
+
+    expect(problem.required).toEqual(["type", "title", "status", "detail", "request_id"]);
+    expect(problem.properties?.type).toMatchObject({
+      type: "string",
+      format: "uri",
+    });
+    expect(problem.properties?.status).toMatchObject({
+      type: "integer",
+      minimum: 400,
+      maximum: 599,
+    });
+    expect(problem.properties?.request_id).toMatchObject({
+      type: "string",
+    });
   });
 
   test("documents every implemented image conversion response media type", async () => {
