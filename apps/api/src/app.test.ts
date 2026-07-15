@@ -1,6 +1,12 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 
 import { createApp } from "./app";
+
+const originalFetch = globalThis.fetch;
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
 
 describe("Reubah API shell", () => {
   test("returns health metadata", async () => {
@@ -73,5 +79,68 @@ describe("Reubah API shell", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toContain("text/html");
     expect(body).toContain("Reubah API Reference");
+  });
+
+  test("validates image conversion multipart requests", async () => {
+    const app = createApp();
+    const body = new FormData();
+    body.set("output_format", "webp");
+
+    const response = await app.request("/v1/image-conversions", {
+      method: "POST",
+      body,
+    });
+    const problem = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(response.headers.get("Content-Type")).toContain("application/problem+json");
+    expect(problem).toMatchObject({
+      type: "https://docs.reubah.com/errors/invalid-request",
+      title: "Invalid request",
+      status: 400,
+      detail: 'Multipart field "file" must contain a file.',
+    });
+  });
+
+  test("bridges image conversion requests to the legacy Go API", async () => {
+    const app = createApp();
+    const requestBody = new FormData();
+    requestBody.set("file", new File(["image-bytes"], "photo.png", { type: "image/png" }));
+    requestBody.set("output_format", "webp");
+    requestBody.set("quality", "high");
+    requestBody.set("width", "1200");
+    requestBody.set("resize_mode", "fill");
+    requestBody.set("optimize", "true");
+
+    globalThis.fetch = (async (input, init) => {
+      expect(input).toBe("http://localhost:8081/process");
+      expect(init?.method).toBe("POST");
+      expect(init?.body).toBeInstanceOf(FormData);
+
+      const upstreamBody = init?.body as FormData;
+      expect(upstreamBody.get("image")).toBeInstanceOf(File);
+      expect(upstreamBody.get("format")).toBe("webp");
+      expect(upstreamBody.get("quality")).toBe("high");
+      expect(upstreamBody.get("width")).toBe("1200");
+      expect(upstreamBody.get("resizeMode")).toBe("fill");
+      expect(upstreamBody.get("optimize")).toBe("true");
+
+      return new Response("converted-image", {
+        status: 200,
+        headers: {
+          "Content-Type": "image/webp",
+        },
+      });
+    }) as typeof fetch;
+
+    const response = await app.request("/v1/image-conversions", {
+      method: "POST",
+      body: requestBody,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("image/webp");
+    expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="photo.webp"');
+    expect(await response.text()).toBe("converted-image");
   });
 });

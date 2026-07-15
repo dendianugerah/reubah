@@ -23,15 +23,31 @@ PORT=17982 bun run api:start
 ```http
 GET /v1/health
 GET /v1/capabilities
+POST /v1/image-conversions
 GET /openapi.json
 GET /reference
 ```
 
-The conversion endpoints are reserved in `openapi/v1.yaml` and will be wired to the conversion layer next:
+The document conversion endpoint is reserved in `openapi/v1.yaml` and will be wired to the conversion layer next:
 
 ```http
-POST /v1/image-conversions
 POST /v1/document-conversions
+```
+
+## Legacy Bridge
+
+`POST /v1/image-conversions` currently bridges to the existing Go `/process` endpoint.
+
+By default, it expects the Go server at:
+
+```text
+http://localhost:8081
+```
+
+Override it with:
+
+```bash
+REUBAH_LEGACY_API_URL=http://localhost:8081 bun run api:start
 ```
 
 ## Contract Source
