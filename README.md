@@ -98,6 +98,7 @@ bun run client:test
 
 - Files are processed synchronously and returned directly.
 - Temporary document conversion files are cleaned up after each request.
+- Document conversions use isolated LibreOffice profiles per request.
 - Missing LibreOffice returns `503 converter-unavailable`.
 - Slow LibreOffice conversions are killed after `REUBAH_LIBREOFFICE_TIMEOUT_MS`, defaulting to 120 seconds.
 - API keys, accounts, billing, usage tracking, rate limits, async jobs, and npm local conversion packages are deferred.

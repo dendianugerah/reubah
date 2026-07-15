@@ -1,4 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { unlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import sharp from "sharp";
 
 import { createApp } from "./app";
@@ -309,6 +312,44 @@ describe("Reubah API shell", () => {
       'attachment; filename="report.txt"; filename*=UTF-8\'\'report.txt',
     );
     expect(await response.text()).toBe("document-bytes");
+  });
+
+  test("runs LibreOffice with an isolated user profile", async () => {
+    const app = createApp();
+    const requestBody = new FormData();
+    const argsPath = join(tmpdir(), `reubah-soffice-${crypto.randomUUID()}.args`);
+    const previousCommand = process.env.REUBAH_LIBREOFFICE_COMMAND;
+    const previousArgsPath = process.env.REUBAH_RECORD_SOFFICE_ARGS;
+
+    process.env.REUBAH_LIBREOFFICE_COMMAND = new URL("../test-fixtures/record-soffice", import.meta.url).pathname;
+    process.env.REUBAH_RECORD_SOFFICE_ARGS = argsPath;
+    requestBody.set(
+      "file",
+      new File(["document-bytes"], "report.docx", {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      }),
+    );
+    requestBody.set("output_format", "pdf");
+
+    try {
+      const response = await app.request("/v1/document-conversions", {
+        method: "POST",
+        body: requestBody,
+      });
+      const args = await Bun.file(argsPath).text();
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Content-Type")).toBe("application/pdf");
+      expect(await response.text()).toBe("converted");
+      expect(args).toContain("-env:UserInstallation=file://");
+      expect(args).toContain("/profile\n");
+      expect(args).toContain("--headless\n");
+      expect(args).toContain("--convert-to\npdf\n");
+    } finally {
+      await unlink(argsPath).catch(() => {});
+      restoreEnv("REUBAH_LIBREOFFICE_COMMAND", previousCommand);
+      restoreEnv("REUBAH_RECORD_SOFFICE_ARGS", previousArgsPath);
+    }
   });
 
   test("returns problem details when LibreOffice is unavailable", async () => {

@@ -67,6 +67,7 @@ docs/
 - [x] Sanitize download filenames in `Content-Disposition`.
 - [x] Add direct TypeScript image conversion service.
 - [x] Add direct TypeScript document conversion service.
+- [x] Isolate LibreOffice user profiles per document conversion.
 - [x] Add LibreOffice process timeout handling.
 - [x] Remove old Go converter code.
 - [x] Remove old server-rendered UI templates.
@@ -123,6 +124,7 @@ Public routes should not expose implementation names such as `/process`, `/proce
 `apps/api/src/services/document-converter.ts`
 
 - Uses LibreOffice through a narrow process-call wrapper.
+- Uses a temporary LibreOffice user profile per request.
 - Stores conversion files in temporary directories.
 - Cleans temporary files after each request.
 - Returns `503 converter-unavailable` when LibreOffice is missing.

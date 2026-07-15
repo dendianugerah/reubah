@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { getLibreOfficeTimeoutMs } from "../config";
 import type { DocumentConversionOptions } from "../domain/form";
@@ -48,7 +49,13 @@ export async function convertDocument(file: File, options: DocumentConversionOpt
 }
 
 function conversionArgs(inputPath: string, outputDirectory: string, inputFormat: string, outputFormat: string) {
-  const args = ["--headless"];
+  const args = [
+    `-env:UserInstallation=${pathToFileURL(join(outputDirectory, "profile")).href}`,
+    "--headless",
+    "--nologo",
+    "--nodefault",
+    "--nofirststartwizard",
+  ];
 
   if (inputFormat === "pdf") {
     args.push("--infilter=writer_pdf_import");

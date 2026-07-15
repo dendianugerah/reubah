@@ -1,0 +1,18 @@
+#!/bin/sh
+
+printf '%s\n' "$@" > "$REUBAH_RECORD_SOFFICE_ARGS"
+
+previous=""
+for argument in "$@"; do
+  if [ "$previous" = "--convert-to" ]; then
+    output_format="$argument"
+  fi
+
+  if [ "$previous" = "--outdir" ]; then
+    output_directory="$argument"
+  fi
+
+  previous="$argument"
+done
+
+printf converted > "$output_directory/input.$output_format"

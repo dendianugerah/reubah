@@ -45,6 +45,8 @@ LibreOffice conversions time out after 120 seconds by default. Override that wit
 REUBAH_LIBREOFFICE_TIMEOUT_MS=180000 bun run api:start
 ```
 
+Each document conversion uses a temporary LibreOffice user profile so concurrent requests do not share the same profile lock.
+
 ## Contract Source
 
 The canonical OpenAPI contract is:
