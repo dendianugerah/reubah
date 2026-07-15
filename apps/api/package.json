@@ -6,6 +6,7 @@
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
     "test": "bun test",
+    "test:integration": "REUBAH_RUN_BRIDGE_INTEGRATION=1 bun test src/bridge-integration.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
