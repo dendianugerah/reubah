@@ -4,6 +4,7 @@ import type {
   Capabilities,
   ConversionResult,
   DocumentConversionInput,
+  Health,
   ImageConversionInput,
   ReubahClientOptions,
 } from "./types";
@@ -36,6 +37,15 @@ export function createReubahClient(options: ReubahClientOptions = {}) {
   }
 
   return {
+    health: {
+      async get() {
+        const response = await request("/v1/health", {
+          method: "GET",
+        });
+
+        return (await response.json()) as Health;
+      },
+    },
     capabilities: {
       async get() {
         const response = await request("/v1/capabilities", {

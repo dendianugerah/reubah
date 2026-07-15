@@ -10,6 +10,12 @@ export type ReubahClientOptions = {
   headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>);
 };
 
+export type Health = {
+  status: "ok";
+  service: string;
+  version: string;
+};
+
 export type Capabilities = {
   limits: {
     max_upload_bytes: number;

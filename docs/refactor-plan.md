@@ -95,6 +95,7 @@ Use this as the working tracker. Keep commits small and update this list as each
 - [x] Reject non-multipart conversion requests with `415 Unsupported Media Type`.
 - [x] Expand OpenAPI contract tests for request schemas, limits, and Problem Details.
 - [x] Scaffold initial `@reubah/client` package for the public HTTP API.
+- [x] Make the TanStack web app consume `@reubah/client` instead of a duplicate API wrapper.
 - [ ] Add `apps/docs` or promote `/reference` into a standalone docs site.
 
 ### Lower Priority UI

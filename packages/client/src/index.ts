@@ -5,6 +5,7 @@ export type {
   ConversionResult,
   DocumentConversionInput,
   DocumentFormat,
+  Health,
   ImageConversionInput,
   ImageInputFormat,
   ImageOutputFormat,
