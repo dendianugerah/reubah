@@ -1,3 +1,4 @@
+import { capabilities } from "./capabilities";
 import {
   documentConversionOptionsSchema,
   getRequiredFile,
@@ -6,6 +7,7 @@ import {
   type DocumentConversionOptions,
   type ImageConversionOptions,
   type ValidationFailure,
+  validateFileExtension,
   validationFailureFromZod,
 } from "./form";
 
@@ -24,6 +26,12 @@ export function parseImageConversionRequest(formData: FormData): ImageConversion
 
   if (!(file instanceof File)) {
     return file;
+  }
+
+  const fileExtensionError = validateFileExtension(file, capabilities.image_conversions.input_formats, "image");
+
+  if (fileExtensionError) {
+    return fileExtensionError;
   }
 
   const options = imageConversionOptionsSchema.safeParse(
@@ -45,6 +53,12 @@ export function parseDocumentConversionRequest(formData: FormData): DocumentConv
 
   if (!(file instanceof File)) {
     return file;
+  }
+
+  const fileExtensionError = validateFileExtension(file, capabilities.document_conversions.input_formats, "document");
+
+  if (fileExtensionError) {
+    return fileExtensionError;
   }
 
   const options = documentConversionOptionsSchema.safeParse(getStringFields(formData, ["output_format"]));

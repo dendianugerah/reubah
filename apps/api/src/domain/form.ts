@@ -67,6 +67,35 @@ export function getRequiredFile(formData: FormData, key: string): File | Validat
   return value;
 }
 
+export function validateFileExtension(
+  file: File,
+  supportedExtensions: readonly string[],
+  fileKind: string,
+): ValidationFailure | null {
+  const extension = getFileExtension(file.name);
+  const supported = supportedExtensions.join(", ");
+
+  if (!extension) {
+    return {
+      type: "unsupported-media-type",
+      title: "Unsupported media type",
+      status: 415,
+      detail: `Uploaded ${fileKind} file must include a supported filename extension: ${supported}.`,
+    };
+  }
+
+  if (!supportedExtensions.includes(extension)) {
+    return {
+      type: "unsupported-media-type",
+      title: "Unsupported media type",
+      status: 415,
+      detail: `Unsupported ${fileKind} input format "${extension}". Supported formats: ${supported}.`,
+    };
+  }
+
+  return null;
+}
+
 export function getStringFields(formData: FormData, keys: string[]) {
   return Object.fromEntries(
     keys.map((key) => {
@@ -85,4 +114,15 @@ export function validationFailureFromZod(error: z.ZodError): ValidationFailure {
     status: 400,
     detail: issue ? `${issue.path.join(".") || "request"}: ${issue.message}` : "Request validation failed.",
   };
+}
+
+function getFileExtension(filename: string) {
+  const normalized = filename.trim().toLowerCase();
+  const lastDot = normalized.lastIndexOf(".");
+
+  if (lastDot < 0 || lastDot === normalized.length - 1) {
+    return null;
+  }
+
+  return normalized.slice(lastDot + 1);
 }

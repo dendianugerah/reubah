@@ -141,6 +141,7 @@ Recommended status codes:
 - `422 Unprocessable Entity`: conversion request is valid but processing failed.
 - `500 Internal Server Error`: unexpected system failure.
 - `503 Service Unavailable`: converter dependency is unavailable.
+- `504 Gateway Timeout`: converter dependency did not respond before the timeout.
 
 ## Examples
 
