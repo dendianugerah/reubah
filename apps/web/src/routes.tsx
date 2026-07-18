@@ -7,8 +7,21 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
-import { Download, FileImage, Loader2, Upload, UploadCloud, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ArrowUpRight,
+  Check,
+  Download,
+  FileImage,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
+  RotateCcw,
+  Server,
+  UploadCloud,
+  X,
+} from "lucide-react";
+import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "motion/react";
+import { useEffect, useMemo, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
 
 import { ApiError, apiBaseUrl, createImageConversion, getCapabilities, getHealth } from "./api/client";
@@ -37,10 +50,24 @@ declare module "@tanstack/react-router" {
   }
 }
 
+const stillSpring = {
+  type: "spring",
+  bounce: 0,
+  duration: 0.38,
+} as const;
+
+const momentumSpring = {
+  type: "spring",
+  bounce: 0.22,
+  duration: 0.42,
+} as const;
+
 export function AppRouter() {
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <LazyMotion features={domAnimation}>
+        <RouterProvider router={router} />
+      </LazyMotion>
     </QueryClientProvider>
   );
 }
@@ -51,11 +78,20 @@ function RootLayout() {
       <header className="topbar">
         <Link to="/" className="brand" aria-label="Reubah home">
           <span className="brand-mark">R</span>
-          <span>Reubah</span>
+          <span className="brand-copy">
+            <strong>Reubah</strong>
+            <span>Self-hosted converter</span>
+          </span>
         </Link>
         <nav className="topnav" aria-label="Primary">
-          <a href={`${apiBaseUrl}/reference`}>API reference</a>
-          <a href={`${apiBaseUrl}/openapi.json`}>OpenAPI</a>
+          <a href={`${apiBaseUrl}/reference`}>
+            <span>API reference</span>
+            <ArrowUpRight size={15} aria-hidden="true" />
+          </a>
+          <a href={`${apiBaseUrl}/openapi.json`}>
+            <span>OpenAPI</span>
+            <ArrowUpRight size={15} aria-hidden="true" />
+          </a>
         </nav>
       </header>
       <Outlet />
@@ -75,35 +111,21 @@ function Dashboard() {
 
   return (
     <main className="workspace">
-      <section className="panel intro-panel">
+      <section className="workspace-header">
         <div>
-          <p className="eyebrow">Self-hosted converter</p>
-          <h1>Reubah</h1>
-          <p className="muted">
-            A quiet workspace for converting images and documents through your own API runtime.
+          <p className="eyebrow">
+            <Server size={15} aria-hidden="true" />
+            Local API workspace
           </p>
+          <h1>Image conversion</h1>
+          <p className="lede">Drop an image, tune the output, and download the converted file from your own runtime.</p>
         </div>
         <ApiStatus loading={health.isLoading} error={health.error} service={health.data?.service} version={health.data?.version} />
       </section>
 
       <ImageConversionPanel capabilities={capabilities.data} loadingCapabilities={capabilities.isLoading} />
 
-      <section className="grid">
-        <CapabilityPanel
-          title="Image conversions"
-          loading={capabilities.isLoading}
-          error={capabilities.error}
-          inputFormats={capabilities.data?.image_conversions.input_formats}
-          outputFormats={capabilities.data?.image_conversions.output_formats}
-        />
-        <CapabilityPanel
-          title="Document conversions"
-          loading={capabilities.isLoading}
-          error={capabilities.error}
-          inputFormats={capabilities.data?.document_conversions.input_formats}
-          outputFormats={capabilities.data?.document_conversions.output_formats}
-        />
-      </section>
+      <CapabilitySection loading={capabilities.isLoading} error={capabilities.error} capabilities={capabilities.data} />
     </main>
   );
 }
@@ -122,8 +144,18 @@ function ImageConversionPanel({
   capabilities?: Awaited<ReturnType<typeof getCapabilities>>;
   loadingCapabilities: boolean;
 }) {
+  const reduceMotion = useReducedMotion();
   const imageCapabilities = capabilities?.image_conversions;
+  const outputFormats = useMemo(() => imageCapabilities?.output_formats ?? ["webp", "jpeg", "png"], [imageCapabilities]);
+  const qualityPresets = useMemo(
+    () => imageCapabilities?.quality_presets ?? ["low", "medium", "high", "lossless"],
+    [imageCapabilities],
+  );
+  const resizeModes = useMemo(() => imageCapabilities?.resize_modes ?? ["fit", "fill", "stretch"], [imageCapabilities]);
+
   const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFailed, setPreviewFailed] = useState(false);
   const [outputFormat, setOutputFormat] = useState("webp");
   const [quality, setQuality] = useState("high");
   const [resizeMode, setResizeMode] = useState("fit");
@@ -134,12 +166,53 @@ function ImageConversionPanel({
   const [dropError, setDropError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!outputFormats.includes(outputFormat) && outputFormats[0]) {
+      setOutputFormat(outputFormats[0]);
+    }
+  }, [outputFormat, outputFormats]);
+
+  useEffect(() => {
+    if (!qualityPresets.includes(quality) && qualityPresets[0]) {
+      setQuality(qualityPresets[0]);
+    }
+  }, [quality, qualityPresets]);
+
+  useEffect(() => {
+    if (!resizeModes.includes(resizeMode) && resizeModes[0]) {
+      setResizeMode(resizeModes[0]);
+    }
+  }, [resizeMode, resizeModes]);
+
+  useEffect(() => {
+    setPreviewFailed(false);
+
+    if (!file || !canPreviewImage(file)) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(file);
+    setPreviewUrl(nextPreviewUrl);
+
+    return () => {
+      URL.revokeObjectURL(nextPreviewUrl);
+    };
+  }, [file]);
+
+  useEffect(() => {
     return () => {
       if (result) {
         URL.revokeObjectURL(result.url);
       }
     };
   }, [result]);
+
+  const clearFile = () => {
+    setFile(null);
+    setResult(null);
+    setDropError(null);
+    conversion.reset();
+  };
 
   const conversion = useMutation({
     mutationFn: async () => {
@@ -207,137 +280,285 @@ function ImageConversionPanel({
       : conversion.error instanceof Error
         ? conversion.error.message
         : null;
+  const canConvert = Boolean(file) && !conversion.isPending && !loadingCapabilities;
+  const dropState = dropzone.isDragActive ? "drop-active" : file ? "drop-filled" : "drop-empty";
 
   return (
-    <section className="panel conversion-panel">
-      <div className="section-heading">
+    <section className="converter" aria-labelledby="image-conversion-title">
+      <div className="converter-title">
         <div>
-          <p className="eyebrow">Convert</p>
-          <h2>Image</h2>
+          <p className="eyebrow">
+            <ImageIcon size={15} aria-hidden="true" />
+            Convert
+          </p>
+          <h2 id="image-conversion-title">Make the output match the job.</h2>
         </div>
         <span className="api-pill">POST /v1/image-conversions</span>
       </div>
 
       <form
-        className="conversion-layout"
+        className="converter-grid"
         onSubmit={(event) => {
           event.preventDefault();
           conversion.mutate();
         }}
       >
-        <div
-          {...dropzone.getRootProps({
-            className: [
-              "upload-zone",
-              dropzone.isDragActive ? "upload-zone-active" : "",
-              dropzone.isDragReject || dropError ? "upload-zone-error" : "",
-              file ? "upload-zone-filled" : "",
-            ]
-              .filter(Boolean)
-              .join(" "),
-          })}
-        >
-          <input {...dropzone.getInputProps()} />
-          <div className="upload-icon" aria-hidden="true">
-            {file ? <FileImage size={20} /> : <UploadCloud size={21} />}
+        <div className="drop-column">
+          <m.div
+            {...dropzone.getRootProps({
+              className: cn(
+                "drop-zone",
+                dropState,
+                (dropzone.isDragReject || dropError) && "drop-error",
+                conversion.isPending && "drop-busy",
+              ),
+            })}
+            animate={
+              reduceMotion
+                ? undefined
+                : {
+                    scale: dropzone.isDragActive ? 1.01 : 1,
+                    y: dropzone.isDragActive ? -4 : 0,
+                  }
+            }
+            transition={dropzone.isDragActive ? momentumSpring : stillSpring}
+            whileTap={reduceMotion ? undefined : { scale: 0.99 }}
+          >
+            <input {...dropzone.getInputProps()} />
+
+            <div className="drop-visual" aria-hidden="true">
+              <AnimatePresence mode="wait" initial={false}>
+                {previewUrl && !previewFailed ? (
+                  <m.img
+                    key={previewUrl}
+                    src={previewUrl}
+                    alt=""
+                    className="preview-image"
+                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+                    animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+                    transition={stillSpring}
+                    onError={() => setPreviewFailed(true)}
+                  />
+                ) : (
+                  <m.div
+                    key="drop-icon"
+                    className="drop-glyph"
+                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
+                    animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
+                    transition={stillSpring}
+                  >
+                    {file ? <FileImage size={42} /> : <UploadCloud size={46} />}
+                  </m.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="drop-copy">
+              <span>{dropzone.isDragActive ? "Release to load" : file ? "Ready to convert" : "Drop image here"}</span>
+              <strong>{file ? file.name : "Choose or drag a file"}</strong>
+              <p>{file ? fileTypeLabel(file) : "PNG, JPG, WebP, GIF, BMP, HEIC, HEIF"}</p>
+            </div>
+
+            {file ? (
+              <m.button
+                className="icon-button clear-file"
+                type="button"
+                aria-label="Remove selected file"
+                whileTap={reduceMotion ? undefined : { scale: 0.92 }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  clearFile();
+                }}
+              >
+                <X size={17} aria-hidden="true" />
+              </m.button>
+            ) : null}
+          </m.div>
+
+          <AnimatePresence initial={false}>
+            {dropError ? (
+              <m.p
+                className="inline-alert"
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                transition={stillSpring}
+              >
+                {dropError}
+              </m.p>
+            ) : null}
+          </AnimatePresence>
+        </div>
+
+        <div className="controls-panel">
+          <SegmentedControl label="Output" options={outputFormats} value={outputFormat} onChange={setOutputFormat} />
+          <SegmentedControl label="Quality" options={qualityPresets} value={quality} onChange={setQuality} />
+          <SegmentedControl label="Resize" options={resizeModes} value={resizeMode} onChange={setResizeMode} />
+
+          <div className="dimension-grid">
+            <NumberField label="Width" value={width} onChange={setWidth} />
+            <NumberField label="Height" value={height} onChange={setHeight} />
           </div>
-          <div className="upload-copy">
-            <p>{dropzone.isDragActive ? "Drop image to load it" : file ? file.name : "Drop image here"}</p>
-            <span>{file ? formatBytes(file.size) : "PNG, JPG, WebP, GIF, BMP, HEIC"}</span>
-          </div>
-          {file ? (
-            <button
-              className="icon-button"
-              type="button"
-              aria-label="Remove selected file"
-              onClick={(event) => {
-                event.stopPropagation();
-                setFile(null);
-                setResult(null);
-                setDropError(null);
-                conversion.reset();
-              }}
+
+          <Toggle checked={optimize} label="Optimize" onChange={setOptimize} />
+
+          <div className="action-panel">
+            <m.button
+              className="primary-button"
+              type="submit"
+              disabled={!canConvert}
+              whileTap={reduceMotion || !canConvert ? undefined : { scale: 0.985 }}
             >
-              <X size={16} aria-hidden="true" />
-            </button>
-          ) : null}
-        </div>
-        {dropError ? <p className="error-text">{dropError}</p> : null}
+              {conversion.isPending ? <Loader2 className="spin" size={18} aria-hidden="true" /> : <Check size={18} aria-hidden="true" />}
+              <span>{conversion.isPending ? "Converting" : file ? `Convert to ${outputFormat.toUpperCase()}` : "Add an image"}</span>
+            </m.button>
 
-        <div className="control-grid">
-          <Field label="Output">
-            <select value={outputFormat} onChange={(event) => setOutputFormat(event.target.value)}>
-              {(imageCapabilities?.output_formats ?? ["webp", "jpeg", "png"]).map((format) => (
-                <option key={format} value={format}>
-                  {format}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Quality">
-            <select value={quality} onChange={(event) => setQuality(event.target.value)}>
-              {(imageCapabilities?.quality_presets ?? ["low", "medium", "high", "lossless"]).map((preset) => (
-                <option key={preset} value={preset}>
-                  {preset}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Width">
-            <input inputMode="numeric" min="1" placeholder="Auto" type="number" value={width} onChange={(event) => setWidth(event.target.value)} />
-          </Field>
-          <Field label="Height">
-            <input inputMode="numeric" min="1" placeholder="Auto" type="number" value={height} onChange={(event) => setHeight(event.target.value)} />
-          </Field>
-          <Field label="Resize">
-            <select value={resizeMode} onChange={(event) => setResizeMode(event.target.value)}>
-              {(imageCapabilities?.resize_modes ?? ["fit", "fill", "stretch"]).map((mode) => (
-                <option key={mode} value={mode}>
-                  {mode}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <label className="checkbox-field">
-            <input checked={optimize} type="checkbox" onChange={(event) => setOptimize(event.target.checked)} />
-            <span>Optimize output</span>
-          </label>
-        </div>
-
-        <div className="actions-row">
-          <button className="primary-button" type="submit" disabled={conversion.isPending || loadingCapabilities}>
-            {conversion.isPending ? <Loader2 className="spin" size={18} aria-hidden="true" /> : <Upload size={18} aria-hidden="true" />}
-            <span>{conversion.isPending ? "Converting" : "Convert"}</span>
-          </button>
-          {errorMessage ? <p className="error-text">{errorMessage}</p> : null}
+            <AnimatePresence mode="wait" initial={false}>
+              {errorMessage ? (
+                <m.p
+                  key="error"
+                  className="inline-alert"
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
+                  animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                  transition={stillSpring}
+                >
+                  {errorMessage}
+                </m.p>
+              ) : result ? (
+                <m.div
+                  key={result.url}
+                  className="result-panel"
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.98 }}
+                  animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
+                  transition={stillSpring}
+                >
+                  <div className="result-copy">
+                    <span>Converted</span>
+                    <strong>{result.filename}</strong>
+                    <p>
+                      {result.contentType} / {formatBytes(result.size)}
+                    </p>
+                  </div>
+                  <m.a
+                    className="download-button"
+                    href={result.url}
+                    download={result.filename}
+                    whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                  >
+                    <Download size={18} aria-hidden="true" />
+                    <span>Download</span>
+                  </m.a>
+                </m.div>
+              ) : (
+                <m.div
+                  key="empty"
+                  className="result-empty"
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
+                  animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                  transition={stillSpring}
+                >
+                  <RotateCcw size={17} aria-hidden="true" />
+                  <span>Result appears after conversion.</span>
+                </m.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </form>
-
-      {result ? (
-        <div className="result-row">
-          <div>
-            <p className="list-label">Result</p>
-            <p className="result-name">{result.filename}</p>
-            <p className="muted result-meta">
-              {result.contentType} / {formatBytes(result.size)}
-            </p>
-          </div>
-          <a className="secondary-button" href={result.url} download={result.filename}>
-            <Download size={18} aria-hidden="true" />
-            <span>Download</span>
-          </a>
-        </div>
-      ) : null}
     </section>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function SegmentedControl({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const reduceMotion = useReducedMotion();
+
   return (
-    <label className="field">
+    <fieldset className="control-group">
+      <legend>{label}</legend>
+      <div className="segmented-control" role="radiogroup" aria-label={label}>
+        {options.map((option) => {
+          const active = option === value;
+
+          return (
+            <m.button
+              key={option}
+              className={cn("segment-button", active && "segment-button-active")}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+              onClick={() => onChange(option)}
+            >
+              {formatOptionLabel(option)}
+            </m.button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="number-field">
       <span>{label}</span>
-      {children}
+      <input inputMode="numeric" min="1" placeholder="Auto" type="number" value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
+  );
+}
+
+function Toggle({
+  checked,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <m.button
+      className={cn("switch-row", checked && "switch-row-active")}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      whileTap={reduceMotion ? undefined : { scale: 0.985 }}
+      onClick={() => onChange(!checked)}
+    >
+      <span className="switch-track">
+        <m.span
+          className="switch-thumb"
+          animate={{ x: checked ? 18 : 0 }}
+          transition={reduceMotion ? { duration: 0 } : stillSpring}
+        />
+      </span>
+      <span>{label}</span>
+    </m.button>
   );
 }
 
@@ -350,15 +571,25 @@ type ApiStatusProps = {
 
 function ApiStatus({ loading, error, service, version }: ApiStatusProps) {
   if (loading) {
-    return <div className="status-card">Checking runtime</div>;
+    return (
+      <div className="status-pill">
+        <Loader2 className="spin" size={15} aria-hidden="true" />
+        <span>Checking API</span>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="status-card status-card-error">API unavailable</div>;
+    return (
+      <div className="status-pill status-pill-error">
+        <span className="status-dot" />
+        <span>API unavailable</span>
+      </div>
+    );
   }
 
   return (
-    <div className="status-card">
+    <div className="status-pill">
       <span className="status-dot" />
       <span>{service}</span>
       <span className="version">v{version}</span>
@@ -366,7 +597,55 @@ function ApiStatus({ loading, error, service, version }: ApiStatusProps) {
   );
 }
 
+function CapabilitySection({
+  loading,
+  error,
+  capabilities,
+}: {
+  loading: boolean;
+  error: Error | null;
+  capabilities?: Awaited<ReturnType<typeof getCapabilities>>;
+}) {
+  return (
+    <section className="capability-section" aria-labelledby="formats-title">
+      <div className="capability-heading">
+        <div>
+          <p className="eyebrow">
+            <Server size={15} aria-hidden="true" />
+            Runtime
+          </p>
+          <h2 id="formats-title">Supported formats</h2>
+        </div>
+        <a className="text-link" href={`${apiBaseUrl}/reference`}>
+          <span>View docs</span>
+          <ArrowUpRight size={15} aria-hidden="true" />
+        </a>
+      </div>
+
+      <div className="capability-grid">
+        <CapabilityPanel
+          icon={<ImageIcon size={18} aria-hidden="true" />}
+          title="Images"
+          loading={loading}
+          error={error}
+          inputFormats={capabilities?.image_conversions.input_formats}
+          outputFormats={capabilities?.image_conversions.output_formats}
+        />
+        <CapabilityPanel
+          icon={<FileText size={18} aria-hidden="true" />}
+          title="Documents"
+          loading={loading}
+          error={error}
+          inputFormats={capabilities?.document_conversions.input_formats}
+          outputFormats={capabilities?.document_conversions.output_formats}
+        />
+      </div>
+    </section>
+  );
+}
+
 type CapabilityPanelProps = {
+  icon: React.ReactNode;
   title: string;
   loading: boolean;
   error: Error | null;
@@ -374,16 +653,19 @@ type CapabilityPanelProps = {
   outputFormats?: string[];
 };
 
-function CapabilityPanel({ title, loading, error, inputFormats, outputFormats }: CapabilityPanelProps) {
+function CapabilityPanel({ icon, title, loading, error, inputFormats, outputFormats }: CapabilityPanelProps) {
   return (
-    <article className="panel">
-      <h2>{title}</h2>
+    <article className="capability-card">
+      <div className="capability-card-heading">
+        <span className="capability-icon">{icon}</span>
+        <h3>{title}</h3>
+      </div>
       {loading ? (
-        <p className="muted">Loading formats</p>
+        <p className="supporting-text">Loading formats</p>
       ) : error ? (
-        <p className="error-text">Could not load capabilities from the API.</p>
+        <p className="inline-alert">Could not load API capabilities.</p>
       ) : (
-        <div className="format-grid">
+        <div className="format-columns">
           <FormatList label="Input" formats={inputFormats ?? []} />
           <FormatList label="Output" formats={outputFormats ?? []} />
         </div>
@@ -407,6 +689,24 @@ function FormatList({ label, formats }: { label: string; formats: string[] }) {
   );
 }
 
+function canPreviewImage(file: File) {
+  const normalizedType = file.type.toLowerCase();
+  const normalizedName = file.name.toLowerCase();
+
+  return (
+    normalizedType.startsWith("image/") &&
+    normalizedType !== "image/heic" &&
+    normalizedType !== "image/heif" &&
+    !normalizedName.endsWith(".heic") &&
+    !normalizedName.endsWith(".heif")
+  );
+}
+
+function fileTypeLabel(file: File) {
+  const type = file.type || "image";
+  return `${type} / ${formatBytes(file.size)}`;
+}
+
 function formatBytes(bytes: number) {
   if (bytes < 1024) {
     return `${bytes} B`;
@@ -417,4 +717,16 @@ function formatBytes(bytes: number) {
   }
 
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatOptionLabel(value: string) {
+  if (value.length <= 4) {
+    return value.toUpperCase();
+  }
+
+  return value[0]?.toUpperCase() + value.slice(1);
+}
+
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
 }
